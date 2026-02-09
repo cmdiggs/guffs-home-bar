@@ -1,0 +1,61 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import type { Cocktail } from "@/lib/db";
+import { CocktailForm } from "./CocktailForm";
+
+export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail[] }) {
+  const [cocktails, setCocktails] = useState(initialCocktails);
+  const [editing, setEditing] = useState<Cocktail | null>(null);
+
+  async function handleDelete(id: number) {
+    if (!confirm("Delete this cocktail?")) return;
+    const res = await fetch(`/api/admin/cocktails/${id}`, { method: "DELETE" });
+    if (res.ok) setCocktails((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  return (
+    <div className="mt-8">
+      <h2 className="font-display text-lg text-ink">All cocktails</h2>
+      {editing ? (
+        <CocktailForm cocktail={editing} onDone={() => setEditing(null)} />
+      ) : null}
+      <ul className="mt-4 space-y-4">
+        {cocktails.map((c) => (
+          <li
+            key={c.id}
+            className="flex flex-col gap-3 rounded-xl border border-black/10 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
+          >
+            <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded bg-black/5">
+              <Image src={c.imagePath} alt={c.name} fill className="object-cover" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-lg text-ink">{c.name}</p>
+              <p className="font-sans text-sm text-ink/70 line-clamp-2">{c.description}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(c)}
+                className="rounded border border-black/20 px-3 py-1.5 font-sans text-sm text-ink hover:bg-black/5"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(c.id)}
+                className="rounded border border-red-200 px-3 py-1.5 font-sans text-sm text-red-700 hover:bg-red-50"
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {cocktails.length === 0 && !editing && (
+        <p className="font-sans text-ink/60">No cocktails yet. Add one above.</p>
+      )}
+    </div>
+  );
+}
