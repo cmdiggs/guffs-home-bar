@@ -30,6 +30,8 @@ yarn-error.log*
 # database
 /data/*.db
 /data/*.db-journal
+/data/*.db-shm
+/data/*.db-wal
 
-# uploads (optional: commit sample images or ignore)
-# /public/uploads
+# uploads (user-uploaded images; uncomment to ignore)
+/public/uploads

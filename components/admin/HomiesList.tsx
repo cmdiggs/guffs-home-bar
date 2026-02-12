@@ -36,7 +36,6 @@ export function HomiesList({ initialHomies }: { initialHomies: Homie[] }) {
             )}
             <div className="min-w-0 flex-1">
               <p className="font-display text-lg text-ink">{h.name}</p>
-              <p className="font-sans text-sm text-ink/70">{h.title}</p>
               <p className="font-sans text-sm text-ink/70 line-clamp-1">{h.description}</p>
             </div>
             <div className="flex gap-2">

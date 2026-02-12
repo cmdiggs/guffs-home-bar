@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import convert from "heic-convert";
 import { isAdmin } from "@/lib/auth";
 import { getMemorabilia, createMemorabilia } from "@/lib/db";
-import { saveMemorabiliaImage, validateImageFile } from "@/lib/storage";
+import { saveMemorabiliaImage, validateMemorabiliaImageFile } from "@/lib/storage";
+
+function isHeicFile(file: { type: string; name: string }): boolean {
+  const t = file.type?.toLowerCase() ?? "";
+  const n = file.name?.toLowerCase() ?? "";
+  return t === "image/heic" || t === "image/heif" || n.endsWith(".heic") || n.endsWith(".heif");
+}
 
 export async function GET() {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,12 +34,30 @@ export async function POST(request: NextRequest) {
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "Image is required." }, { status: 400 });
     }
-    const validation = validateImageFile({ type: file.type, size: file.size });
+    const validation = validateMemorabiliaImageFile({
+      type: file.type,
+      size: file.size,
+      name: file.name,
+    });
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const imagePath = saveMemorabiliaImage(buffer, file.name);
+    let buffer = Buffer.from(await file.arrayBuffer());
+    let saveName = file.name;
+    if (isHeicFile({ type: file.type, name: file.name })) {
+      try {
+        const jpegBuffer = await convert({ buffer, format: "JPEG", quality: 0.9 });
+        buffer = Buffer.isBuffer(jpegBuffer) ? jpegBuffer : Buffer.from(jpegBuffer as ArrayBuffer | Uint8Array);
+        saveName = file.name.replace(/\.(heic|heif)$/i, ".jpg") || "image.jpg";
+      } catch (convertErr) {
+        console.error("HEIC conversion failed:", convertErr);
+        return NextResponse.json(
+          { error: "Could not process HEIC image. Try saving as JPEG first." },
+          { status: 400 }
+        );
+      }
+    }
+    const imagePath = saveMemorabiliaImage(buffer, saveName);
     const item = createMemorabilia(title, description, imagePath);
     return NextResponse.json(item);
   } catch (e) {

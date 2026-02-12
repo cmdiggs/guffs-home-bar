@@ -19,11 +19,10 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const name = (formData.get("name") as string)?.trim();
-    const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
     const file = formData.get("file");
-    if (!name || !title || !description) {
-      return NextResponse.json({ error: "Name, title, and description are required." }, { status: 400 });
+    if (!name || !description) {
+      return NextResponse.json({ error: "Name and description are required." }, { status: 400 });
     }
     let imagePath: string | null = null;
     if (file && file instanceof File && file.size > 0) {
@@ -34,7 +33,7 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer());
       imagePath = saveHomieImage(buffer, file.name);
     }
-    const homie = createHomie(name, title, description, imagePath);
+    const homie = createHomie(name, "", description, imagePath);
     return NextResponse.json(homie);
   } catch (e) {
     console.error(e);

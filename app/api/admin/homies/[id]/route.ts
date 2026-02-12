@@ -15,7 +15,6 @@ export async function PATCH(
   try {
     const formData = await _request.formData();
     const name = (formData.get("name") as string)?.trim();
-    const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
     const file = formData.get("file");
     let imagePath: string | null = existing.imagePath;
@@ -29,7 +28,7 @@ export async function PATCH(
     }
     updateHomie(id, {
       name: name ?? existing.name,
-      title: title ?? existing.title,
+      title: "",
       description: description ?? existing.description,
       imagePath,
     });

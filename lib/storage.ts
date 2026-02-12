@@ -8,6 +8,7 @@ const MEMORABILIA_DIR = path.join(UPLOADS_DIR, "memorabilia");
 const HOMIES_DIR = path.join(UPLOADS_DIR, "homies");
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const SUBMISSION_ALLOWED_TYPES = [...ALLOWED_TYPES, "image/heic", "image/heif"];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
 function ensureDirs() {
@@ -40,6 +41,54 @@ export function getMemorabiliaDir(): string {
 export function validateImageFile(file: { type: string; size: number }): { ok: true } | { ok: false; error: string } {
   if (!ALLOWED_TYPES.includes(file.type)) {
     return { ok: false, error: "Invalid file type. Use JPEG, PNG, WebP, or GIF." };
+  }
+  if (file.size > MAX_SIZE_BYTES) {
+    return { ok: false, error: "File too large. Maximum size is 10MB." };
+  }
+  return { ok: true };
+}
+
+const MEMORABILIA_ALLOWED_TYPES = [...ALLOWED_TYPES, "image/heic", "image/heif"];
+
+/** For share-your-visit uploads: allows HEIC/HEIF from iPhones (converted to JPEG on server). */
+export function validateSubmissionImageFile(file: {
+  type: string;
+  size: number;
+  name?: string;
+}): { ok: true } | { ok: false; error: string } {
+  const name = (file.name ?? "").toLowerCase();
+  const isHeic =
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif") ||
+    (file.type === "" && (name.endsWith(".heic") || name.endsWith(".heif"))); // iOS sometimes omits type
+  const allowed = isHeic || SUBMISSION_ALLOWED_TYPES.includes(file.type);
+  if (!allowed) {
+    return { ok: false, error: "Invalid file type. Use JPEG, PNG, WebP, GIF, or HEIC (iPhone photos)." };
+  }
+  if (file.size > MAX_SIZE_BYTES) {
+    return { ok: false, error: "File too large. Maximum size is 10MB." };
+  }
+  return { ok: true };
+}
+
+/** For collection/memorabilia uploads: allows HEIC/HEIF (converted to JPEG on server). */
+export function validateMemorabiliaImageFile(file: {
+  type: string;
+  size: number;
+  name?: string;
+}): { ok: true } | { ok: false; error: string } {
+  const name = (file.name ?? "").toLowerCase();
+  const isHeic =
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif") ||
+    (file.type === "" && (name.endsWith(".heic") || name.endsWith(".heif")));
+  const allowed = isHeic || MEMORABILIA_ALLOWED_TYPES.includes(file.type);
+  if (!allowed) {
+    return { ok: false, error: "Invalid file type. Use JPEG, PNG, WebP, GIF, or HEIC (iPhone photos)." };
   }
   if (file.size > MAX_SIZE_BYTES) {
     return { ok: false, error: "File too large. Maximum size is 10MB." };

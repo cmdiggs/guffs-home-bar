@@ -58,7 +58,7 @@ export function MemorabiliaForm({ item, onDone }: { item?: Memorabilia; onDone?:
           <label className="block font-sans text-sm font-medium text-ink mb-1">Image</label>
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,image/heic,image/heif,.heic,.heif"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="w-full font-sans text-sm text-ink"
           />

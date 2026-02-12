@@ -1,10 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import type { Memorabilia } from "@/lib/db";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 type Props = { items: Memorabilia[] };
 
 export function MemorabiliaSection({ items }: Props) {
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+
   return (
     <section className="container mx-auto px-4 py-12 bg-secondary/30" id="memorabilia">
       <div className="flex items-center gap-3 mb-8">
@@ -15,42 +20,48 @@ export function MemorabiliaSection({ items }: Props) {
       </div>
 
       {items.length === 0 ? (
-        <Card className="border-border/50">
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No memorabilia featured yet. Check back soon!</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/50 bg-card py-12 text-center">
+          <p className="text-muted-foreground">No memorabilia featured yet. Check back soon!</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+          className="visitor-photos-slider flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-4 px-4 md:mx-0 md:px-0 touch-pan-x"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
           {items.map((item) => (
-            <Card key={item.id} className="overflow-hidden border-border/50 hover:shadow-lg transition-shadow">
-              <div className="md:flex">
-                <div className="relative h-64 md:h-auto md:w-1/2 bg-secondary">
-                  <Image
-                    src={item.imagePath}
-                    alt={item.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 320px"
-                  />
-                </div>
-                <div className="md:w-1/2">
-                  <CardHeader>
-                    <CardTitle className="font-sans text-xl flex-1">
-                      {item.title}
-                    </CardTitle>
-                    {item.description && (
-                      <CardDescription className="text-base leading-relaxed">
-                        {item.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                </div>
+            <div
+              key={item.id}
+              className="relative shrink-0 w-[85vw] max-w-sm aspect-[4/3] rounded-xl overflow-hidden bg-secondary snap-center snap-always md:w-80 cursor-pointer"
+              onClick={() => setLightbox({ src: item.imagePath, alt: item.title })}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: item.imagePath, alt: item.title })}
+              aria-label="View full size"
+            >
+              <Image
+                src={item.imagePath}
+                alt={item.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 85vw, 320px"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-white pointer-events-none">
+                <p className="font-semibold">{item.title}</p>
+                {item.description && (
+                  <p className="text-sm mt-0.5 line-clamp-2 opacity-90">{item.description}</p>
+                )}
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}
+
+      <ImageLightbox
+        src={lightbox?.src ?? ""}
+        alt={lightbox?.alt ?? ""}
+        open={!!lightbox}
+        onClose={() => setLightbox(null)}
+      />
     </section>
   );
 }

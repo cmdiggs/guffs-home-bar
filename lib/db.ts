@@ -222,6 +222,12 @@ export function updateSubmissionStatus(id: number, status: "pending" | "approved
   getDb().prepare("UPDATE submissions SET status = ? WHERE id = ?").run(status, id);
 }
 
+export function getApprovedSubmissions(): Submission[] {
+  return getDb()
+    .prepare("SELECT * FROM submissions WHERE status = 'approved' ORDER BY createdAt DESC")
+    .all() as Submission[];
+}
+
 export function getHomies(): Homie[] {
   return getDb().prepare("SELECT * FROM homies ORDER BY sortOrder ASC, id ASC").all() as Homie[];
 }

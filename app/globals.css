@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -25,10 +27,40 @@
   font-display: swap;
 }
 
+/* Druk X Cond Super — for GUFFS story header (SQUAD-style) */
+@font-face {
+  font-family: "Druk X Cond Super";
+  src: url("/fonts/Druk-XCondSuper.woff") format("woff");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Guffs story title: big, centered, Druk */
+.guffs-title {
+  font-family: "Druk X Cond Super", sans-serif !important;
+}
+
+/* Scale GUFFS so the word spans ~100% of viewport width (condensed font ≈ 4× font-size) */
+.guffs-title-size {
+  font-size: clamp(4rem, 24vw, 28rem);
+}
+
+/* Story section: force Nanum Myeongjo (quoted name required in CSS) */
+.font-story,
+.story-section-font {
+  font-family: "Nanum Myeongjo", Georgia, serif !important;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Hide scrollbar on visitor photos slider (webkit) */
+.visitor-photos-slider::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes logoFadeIn {

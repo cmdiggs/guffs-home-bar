@@ -6,7 +6,6 @@ type Homie = { id: number; name: string; title: string; description: string; ima
 
 export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => void }) {
   const [name, setName] = useState(homie?.name ?? "");
-  const [title, setTitle] = useState(homie?.title ?? "");
   const [description, setDescription] = useState(homie?.description ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -18,7 +17,6 @@ export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => voi
     setLoading(true);
     const formData = new FormData();
     formData.append("name", name.trim());
-    formData.append("title", title.trim());
     formData.append("description", description.trim());
     if (file) formData.append("file", file);
     const url = homie ? `/api/admin/homies/${homie.id}` : "/api/admin/homies";
@@ -31,7 +29,6 @@ export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => voi
         return;
       }
       setName("");
-      setTitle("");
       setDescription("");
       setFile(null);
       onDone?.();
@@ -54,17 +51,6 @@ export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => voi
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="w-full rounded border border-black/15 px-3 py-2 font-sans text-ink"
-          />
-        </div>
-        <div>
-          <label className="block font-sans text-sm font-medium text-ink mb-1">Title / role</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            placeholder="e.g. The homie"
             className="w-full rounded border border-black/15 px-3 py-2 font-sans text-ink"
           />
         </div>
