@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import sharp from "sharp";
+import { put } from "@vercel/blob";
 
 const UPLOADS_DIR = process.env.UPLOADS_PATH ?? path.join(process.cwd(), "public", "uploads");
 const SUBMISSIONS_DIR = path.join(UPLOADS_DIR, "submissions");
@@ -15,7 +16,10 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const COMPRESSION_QUALITY = 85; // High quality JPEG compression
 const MAX_WIDTH = 2000; // Max width to prevent huge images
 
+const isProduction = process.env.VERCEL_ENV === "production" || process.env.BLOB_READ_WRITE_TOKEN;
+
 function ensureDirs() {
+  if (isProduction) return; // No need to create dirs in production
   for (const dir of [UPLOADS_DIR, SUBMISSIONS_DIR, COCKTAILS_DIR, MEMORABILIA_DIR, HOMIES_DIR]) {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   }
@@ -118,38 +122,42 @@ async function compressImage(buffer: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-export async function saveSubmissionFile(file: Buffer, originalName: string): Promise<string> {
-  ensureDirs();
-  const compressedBuffer = await compressImage(file);
+/**
+ * Save file to Vercel Blob in production, or local filesystem in development
+ */
+async function saveFile(buffer: Buffer, originalName: string, folder: string): Promise<string> {
+  const compressedBuffer = await compressImage(buffer);
   const filename = safeFilename(originalName);
-  const filePath = path.join(SUBMISSIONS_DIR, filename);
-  fs.writeFileSync(filePath, compressedBuffer);
-  return `/uploads/submissions/${filename}`;
+
+  if (isProduction) {
+    // Production: Upload to Vercel Blob
+    const blob = await put(`${folder}/${filename}`, compressedBuffer, {
+      access: "public",
+      contentType: "image/jpeg",
+    });
+    return blob.url;
+  } else {
+    // Development: Save to local filesystem
+    ensureDirs();
+    const localDir = path.join(UPLOADS_DIR, folder);
+    const filePath = path.join(localDir, filename);
+    fs.writeFileSync(filePath, compressedBuffer);
+    return `/uploads/${folder}/${filename}`;
+  }
+}
+
+export async function saveSubmissionFile(file: Buffer, originalName: string): Promise<string> {
+  return saveFile(file, originalName, "submissions");
 }
 
 export async function saveCocktailImage(file: Buffer, originalName: string): Promise<string> {
-  ensureDirs();
-  const compressedBuffer = await compressImage(file);
-  const filename = safeFilename(originalName);
-  const filePath = path.join(COCKTAILS_DIR, filename);
-  fs.writeFileSync(filePath, compressedBuffer);
-  return `/uploads/cocktails/${filename}`;
+  return saveFile(file, originalName, "cocktails");
 }
 
 export async function saveMemorabiliaImage(file: Buffer, originalName: string): Promise<string> {
-  ensureDirs();
-  const compressedBuffer = await compressImage(file);
-  const filename = safeFilename(originalName);
-  const filePath = path.join(MEMORABILIA_DIR, filename);
-  fs.writeFileSync(filePath, compressedBuffer);
-  return `/uploads/memorabilia/${filename}`;
+  return saveFile(file, originalName, "memorabilia");
 }
 
 export async function saveHomieImage(file: Buffer, originalName: string): Promise<string> {
-  ensureDirs();
-  const compressedBuffer = await compressImage(file);
-  const filename = safeFilename(originalName);
-  const filePath = path.join(HOMIES_DIR, filename);
-  fs.writeFileSync(filePath, compressedBuffer);
-  return `/uploads/homies/${filename}`;
+  return saveFile(file, originalName, "homies");
 }
