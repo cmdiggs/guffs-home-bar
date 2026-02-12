@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import heic2any from "heic2any";
 
 type Memorabilia = { id: number; title: string; description: string; imagePath: string };
 
@@ -13,6 +12,9 @@ function isHeic(file: File): boolean {
 
 async function convertHeicToJpeg(file: File): Promise<File> {
   try {
+    // Dynamic import to avoid SSR issues
+    const heic2any = (await import("heic2any")).default;
+
     const convertedBlob = await heic2any({
       blob: file,
       toType: "image/jpeg",

@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import heic2any from "heic2any";
 
 function isHeic(file: File): boolean {
   const t = file.type?.toLowerCase() ?? "";
@@ -15,6 +14,9 @@ function isHeic(file: File): boolean {
 
 async function convertHeicToJpeg(file: File): Promise<File> {
   try {
+    // Dynamic import to avoid SSR issues
+    const heic2any = (await import("heic2any")).default;
+
     const convertedBlob = await heic2any({
       blob: file,
       toType: "image/jpeg",
