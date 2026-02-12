@@ -5,11 +5,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import heic2any from "heic2any";
 
 function isHeic(file: File): boolean {
   const t = file.type?.toLowerCase() ?? "";
   const n = file.name?.toLowerCase() ?? "";
   return t === "image/heic" || t === "image/heif" || n.endsWith(".heic") || n.endsWith(".heif");
+}
+
+async function convertHeicToJpeg(file: File): Promise<File> {
+  try {
+    const convertedBlob = await heic2any({
+      blob: file,
+      toType: "image/jpeg",
+      quality: 0.9,
+    });
+
+    // heic2any can return Blob or Blob[], handle both cases
+    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+
+    // Create a new File from the Blob
+    const newFileName = file.name.replace(/\.(heic|heif)$/i, ".jpg");
+    return new File([blob], newFileName, { type: "image/jpeg" });
+  } catch (error) {
+    console.error("HEIC conversion failed:", error);
+    throw new Error("Failed to convert HEIC image. Please try a different photo.");
+  }
 }
 
 const CameraIcon = () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 13v7a2 2 0 01-2 2H7a2 2 0 01-2-2v-7" /></svg>;
@@ -35,31 +56,47 @@ export function UploadForm() {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFile(f);
     setPreviewLoading(true);
     setPreview(null);
+    setStatus("idle");
+    setMessage("");
 
     try {
+      let fileToUse = f;
+
+      // Convert HEIC to JPEG on the client side
       if (isHeic(f)) {
-        // HEIC files will be converted on the server - no preview needed
-        setPreview(null);
-        setPreviewLoading(false);
-      } else {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string | null;
-          if (result) setPreview(result);
+        try {
+          fileToUse = await convertHeicToJpeg(f);
+        } catch (error) {
+          setStatus("error");
+          setMessage(error instanceof Error ? error.message : "Failed to convert HEIC image");
           setPreviewLoading(false);
-        };
-        reader.onerror = () => setPreviewLoading(false);
-        reader.readAsDataURL(f);
-        return;
+          return;
+        }
       }
-    } catch {
+
+      setFile(fileToUse);
+
+      // Generate preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string | null;
+        if (result) setPreview(result);
+        setPreviewLoading(false);
+      };
+      reader.onerror = () => {
+        setPreviewLoading(false);
+        setStatus("error");
+        setMessage("Failed to load image preview");
+      };
+      reader.readAsDataURL(fileToUse);
+    } catch (error) {
       setPreview(null);
       setPreviewLoading(false);
+      setStatus("error");
+      setMessage("Failed to process image");
     }
-    setPreviewLoading(false);
   }
 
   function clearPreview() {

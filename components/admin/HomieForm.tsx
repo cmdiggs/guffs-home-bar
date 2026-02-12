@@ -1,8 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import heic2any from "heic2any";
 
 type Homie = { id: number; name: string; title: string; description: string; imagePath: string | null };
+
+function isHeic(file: File): boolean {
+  const t = file.type?.toLowerCase() ?? "";
+  const n = file.name?.toLowerCase() ?? "";
+  return t === "image/heic" || t === "image/heif" || n.endsWith(".heic") || n.endsWith(".heif");
+}
+
+async function convertHeicToJpeg(file: File): Promise<File> {
+  try {
+    const convertedBlob = await heic2any({
+      blob: file,
+      toType: "image/jpeg",
+      quality: 0.9,
+    });
+    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+    const newFileName = file.name.replace(/\.(heic|heif)$/i, ".jpg");
+    return new File([blob], newFileName, { type: "image/jpeg" });
+  } catch (error) {
+    console.error("HEIC conversion failed:", error);
+    throw new Error("Failed to convert HEIC image");
+  }
+}
 
 export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => void }) {
   const [name, setName] = useState(homie?.name ?? "");
@@ -15,13 +38,29 @@ export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => voi
     e.preventDefault();
     setError("");
     setLoading(true);
-    const formData = new FormData();
-    formData.append("name", name.trim());
-    formData.append("description", description.trim());
-    if (file) formData.append("file", file);
-    const url = homie ? `/api/admin/homies/${homie.id}` : "/api/admin/homies";
-    const method = homie ? "PATCH" : "POST";
+
     try {
+      let fileToUpload = file;
+
+      // Convert HEIC to JPEG if needed
+      if (file && isHeic(file)) {
+        try {
+          fileToUpload = await convertHeicToJpeg(file);
+        } catch (error) {
+          setError(error instanceof Error ? error.message : "Failed to convert HEIC image");
+          setLoading(false);
+          return;
+        }
+      }
+
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("description", description.trim());
+      if (fileToUpload) formData.append("file", fileToUpload);
+
+      const url = homie ? `/api/admin/homies/${homie.id}` : "/api/admin/homies";
+      const method = homie ? "PATCH" : "POST";
+
       const res = await fetch(url, { method, body: formData });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -69,7 +108,7 @@ export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => voi
         <label className="block font-sans text-sm font-medium text-ink mb-1">Image (optional)</label>
         <input
           type="file"
-          accept="image/*"
+          accept="image/*,image/heic,image/heif,.heic,.heif"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="w-full font-sans text-sm text-ink"
         />
