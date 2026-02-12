@@ -16,7 +16,7 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const COMPRESSION_QUALITY = 85; // High quality JPEG compression
 const MAX_WIDTH = 2000; // Max width to prevent huge images
 
-const isProduction = process.env.VERCEL_ENV === "production" || process.env.BLOB_READ_WRITE_TOKEN;
+const isProduction = process.env.VERCEL_ENV === "production" || !!process.env.BLOB_READ_WRITE_TOKEN;
 
 function ensureDirs() {
   if (isProduction) return; // No need to create dirs in production
@@ -131,11 +131,16 @@ async function saveFile(buffer: Buffer, originalName: string, folder: string): P
 
   if (isProduction) {
     // Production: Upload to Vercel Blob
-    const blob = await put(`${folder}/${filename}`, compressedBuffer, {
-      access: "public",
-      contentType: "image/jpeg",
-    });
-    return blob.url;
+    try {
+      const blob = await put(`${folder}/${filename}`, compressedBuffer, {
+        access: "public",
+        contentType: "image/jpeg",
+      });
+      return blob.url;
+    } catch (error) {
+      console.error("Vercel Blob upload failed:", error);
+      throw new Error(`Failed to upload to Vercel Blob: ${error}`);
+    }
   } else {
     // Development: Save to local filesystem
     ensureDirs();
