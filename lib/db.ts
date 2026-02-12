@@ -21,7 +21,8 @@ function getDb() {
         url: process.env.TURSO_DATABASE_URL!,
         authToken: process.env.TURSO_AUTH_TOKEN!,
       });
-      runMigrationsTurso(tursoDb);
+      // Tables already exist in Turso from migration script
+      // No need to run migrations on every request
     }
     return tursoDb;
   } else {
