@@ -10,25 +10,6 @@ function isHeic(file: File): boolean {
   return t === "image/heic" || t === "image/heif" || n.endsWith(".heic") || n.endsWith(".heif");
 }
 
-async function convertHeicToJpeg(file: File): Promise<File> {
-  try {
-    // Dynamic import to avoid SSR issues
-    const heic2any = (await import("heic2any")).default;
-
-    const convertedBlob = await heic2any({
-      blob: file,
-      toType: "image/jpeg",
-      quality: 0.9,
-    });
-    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-    const newFileName = file.name.replace(/\.(heic|heif)$/i, ".jpg");
-    return new File([blob], newFileName, { type: "image/jpeg" });
-  } catch (error) {
-    console.error("HEIC conversion failed:", error);
-    throw new Error("Failed to convert HEIC image");
-  }
-}
-
 export function MemorabiliaForm({ item, onDone }: { item?: Memorabilia; onDone?: () => void }) {
   const [title, setTitle] = useState(item?.title ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
@@ -39,26 +20,20 @@ export function MemorabiliaForm({ item, onDone }: { item?: Memorabilia; onDone?:
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    // Check for HEIC before submitting
+    if (file && isHeic(file)) {
+      setError("HEIC photos not supported. Please use iPhone's Share → Save to Files to convert to JPEG first, or email the photo to yourself.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      let fileToUpload = file;
-
-      // Convert HEIC to JPEG if needed
-      if (file && isHeic(file)) {
-        try {
-          fileToUpload = await convertHeicToJpeg(file);
-        } catch (error) {
-          setError(error instanceof Error ? error.message : "Failed to convert HEIC image");
-          setLoading(false);
-          return;
-        }
-      }
-
       const formData = new FormData();
       formData.append("title", title.trim());
       formData.append("description", description.trim());
-      if (fileToUpload) formData.append("file", fileToUpload);
+      if (file) formData.append("file", file);
 
       const url = item ? `/api/admin/memorabilia/${item.id}` : "/api/admin/memorabilia";
       const method = item ? "PATCH" : "POST";

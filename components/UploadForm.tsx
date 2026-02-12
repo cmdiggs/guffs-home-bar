@@ -12,29 +12,6 @@ function isHeic(file: File): boolean {
   return t === "image/heic" || t === "image/heif" || n.endsWith(".heic") || n.endsWith(".heif");
 }
 
-async function convertHeicToJpeg(file: File): Promise<File> {
-  try {
-    // Dynamic import to avoid SSR issues
-    const heic2any = (await import("heic2any")).default;
-
-    const convertedBlob = await heic2any({
-      blob: file,
-      toType: "image/jpeg",
-      quality: 0.9,
-    });
-
-    // heic2any can return Blob or Blob[], handle both cases
-    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-
-    // Create a new File from the Blob
-    const newFileName = file.name.replace(/\.(heic|heif)$/i, ".jpg");
-    return new File([blob], newFileName, { type: "image/jpeg" });
-  } catch (error) {
-    console.error("HEIC conversion failed:", error);
-    throw new Error("Failed to convert HEIC image. Please try a different photo.");
-  }
-}
-
 const CameraIcon = () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 13v7a2 2 0 01-2 2H7a2 2 0 01-2-2v-7" /></svg>;
 const UploadIcon = () => <svg className="h-10 w-10 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
 const XIcon = () => <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
@@ -58,27 +35,22 @@ export function UploadForm() {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
+
+    // Check for HEIC and show helpful error
+    if (isHeic(f)) {
+      setStatus("error");
+      setMessage("📸 iPhone HEIC photos aren't supported yet. To upload: Tap the Share button on your photo → Save to Files → then upload the converted version here. Or email it to yourself - that converts it too!");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
     setPreviewLoading(true);
     setPreview(null);
     setStatus("idle");
     setMessage("");
 
     try {
-      let fileToUse = f;
-
-      // Convert HEIC to JPEG on the client side
-      if (isHeic(f)) {
-        try {
-          fileToUse = await convertHeicToJpeg(f);
-        } catch (error) {
-          setStatus("error");
-          setMessage(error instanceof Error ? error.message : "Failed to convert HEIC image");
-          setPreviewLoading(false);
-          return;
-        }
-      }
-
-      setFile(fileToUse);
+      setFile(f);
 
       // Generate preview
       const reader = new FileReader();
@@ -92,7 +64,7 @@ export function UploadForm() {
         setStatus("error");
         setMessage("Failed to load image preview");
       };
-      reader.readAsDataURL(fileToUse);
+      reader.readAsDataURL(f);
     } catch (error) {
       setPreview(null);
       setPreviewLoading(false);
