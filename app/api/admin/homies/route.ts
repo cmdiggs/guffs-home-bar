@@ -6,7 +6,7 @@ import { saveHomieImage, validateImageFile } from "@/lib/storage";
 export async function GET() {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const homies = getHomies();
+    const homies = await getHomies();
     return NextResponse.json(homies);
   } catch (e) {
     console.error(e);
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer());
       imagePath = saveHomieImage(buffer, file.name);
     }
-    const homie = createHomie(name, "", description, imagePath);
+    const homie = await createHomie(name, "", description, imagePath);
     return NextResponse.json(homie);
   } catch (e) {
     console.error(e);

@@ -10,7 +10,7 @@ export async function PATCH(
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  const existing = getCocktailById(id);
+  const existing = await getCocktailById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
     const formData = await _request.formData();
@@ -28,14 +28,14 @@ export async function PATCH(
       const buffer = Buffer.from(await file.arrayBuffer());
       imagePath = saveCocktailImage(buffer, file.name);
     }
-    updateCocktail(id, {
+    await updateCocktail(id, {
       name: name ?? existing.name,
       description: description ?? existing.description,
       imagePath,
       friendName: friendName ?? existing.friendName,
       ingredients: ingredients ?? existing.ingredients,
     });
-    return NextResponse.json(getCocktailById(id));
+    return NextResponse.json(await getCocktailById(id));
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
@@ -49,7 +49,7 @@ export async function DELETE(
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  if (!getCocktailById(id)) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  deleteCocktail(id);
+  if (!(await getCocktailById(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await deleteCocktail(id);
   return NextResponse.json({ ok: true });
 }

@@ -3,7 +3,7 @@ import { CocktailForm } from "@/components/admin/CocktailForm";
 import { CocktailsList } from "@/components/admin/CocktailsList";
 
 export default async function AdminCocktailsPage() {
-  const cocktails = getCocktails();
+  const cocktails = await getCocktails();
   return (
     <div>
       <h1 className="font-display text-2xl text-ink">Cocktails</h1>

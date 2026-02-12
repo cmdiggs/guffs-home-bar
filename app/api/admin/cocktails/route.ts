@@ -6,7 +6,7 @@ import { saveCocktailImage, validateImageFile } from "@/lib/storage";
 export async function GET() {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const cocktails = getCocktails();
+    const cocktails = await getCocktails();
     return NextResponse.json(cocktails);
   } catch (e) {
     console.error(e);
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     } else {
       imagePath = "/guffs-logo.svg";
     }
-    const cocktail = createCocktail(name, description, imagePath, 0, friendName, ingredients);
+    const cocktail = await createCocktail(name, description, imagePath, 0, friendName, ingredients);
     return NextResponse.json(cocktail);
   } catch (e) {
     console.error(e);

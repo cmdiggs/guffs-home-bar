@@ -10,7 +10,7 @@ export async function PATCH(
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  const existing = getHomieById(id);
+  const existing = await getHomieById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
     const formData = await _request.formData();
@@ -26,13 +26,13 @@ export async function PATCH(
       const buffer = Buffer.from(await file.arrayBuffer());
       imagePath = saveHomieImage(buffer, file.name);
     }
-    updateHomie(id, {
+    await updateHomie(id, {
       name: name ?? existing.name,
       title: "",
       description: description ?? existing.description,
       imagePath,
     });
-    return NextResponse.json(getHomieById(id));
+    return NextResponse.json(await getHomieById(id));
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
@@ -46,7 +46,7 @@ export async function DELETE(
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  if (!getHomieById(id)) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  deleteHomie(id);
+  if (!(await getHomieById(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await deleteHomie(id);
   return NextResponse.json({ ok: true });
 }

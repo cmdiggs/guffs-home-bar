@@ -3,7 +3,7 @@ import { HomieForm } from "@/components/admin/HomieForm";
 import { HomiesList } from "@/components/admin/HomiesList";
 
 export default async function AdminHomiesPage() {
-  const homies = getHomies();
+  const homies = await getHomies();
   return (
     <div>
       <h1 className="font-display text-2xl text-ink">The Homies</h1>

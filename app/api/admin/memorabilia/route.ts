@@ -13,7 +13,7 @@ function isHeicFile(file: { type: string; name: string }): boolean {
 export async function GET() {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const items = getMemorabilia();
+    const items = await getMemorabilia();
     return NextResponse.json(items);
   } catch (e) {
     console.error(e);
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       }
     }
     const imagePath = saveMemorabiliaImage(buffer, saveName);
-    const item = createMemorabilia(title, description, imagePath);
+    const item = await createMemorabilia(title, description, imagePath);
     return NextResponse.json(item);
   } catch (e) {
     console.error(e);

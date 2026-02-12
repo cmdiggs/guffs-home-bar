@@ -17,7 +17,7 @@ export async function PATCH(
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  const existing = getMemorabiliaById(id);
+  const existing = await getMemorabiliaById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
     const formData = await _request.formData();
@@ -55,12 +55,12 @@ export async function PATCH(
       }
       imagePath = saveMemorabiliaImage(buffer, saveName);
     }
-    updateMemorabilia(id, {
+    await updateMemorabilia(id, {
       title: title ?? existing.title,
       description: description ?? existing.description,
       imagePath,
     });
-    return NextResponse.json(getMemorabiliaById(id));
+    return NextResponse.json(await getMemorabiliaById(id));
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
@@ -74,7 +74,7 @@ export async function DELETE(
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  if (!getMemorabiliaById(id)) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  deleteMemorabilia(id);
+  if (!(await getMemorabiliaById(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await deleteMemorabilia(id);
   return NextResponse.json({ ok: true });
 }

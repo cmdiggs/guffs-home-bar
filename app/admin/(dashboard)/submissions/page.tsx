@@ -2,7 +2,7 @@ import { SubmissionsList } from "@/components/admin/SubmissionsList";
 import { getSubmissions } from "@/lib/db";
 
 export default async function AdminSubmissionsPage() {
-  const submissions = getSubmissions();
+  const submissions = await getSubmissions();
   return (
     <div>
       <h1 className="font-display text-2xl text-ink">Guest photos</h1>

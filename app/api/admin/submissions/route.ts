@@ -5,7 +5,7 @@ import { getSubmissions } from "@/lib/db";
 export async function GET() {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const submissions = getSubmissions();
+    const submissions = await getSubmissions();
     return NextResponse.json(submissions);
   } catch (e) {
     console.error(e);

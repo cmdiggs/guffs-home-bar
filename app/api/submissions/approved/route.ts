@@ -3,7 +3,7 @@ import { getApprovedSubmissions } from "@/lib/db";
 
 export async function GET() {
   try {
-    const submissions = getApprovedSubmissions();
+    const submissions = await getApprovedSubmissions();
     return NextResponse.json(submissions);
   } catch (e) {
     console.error(e);

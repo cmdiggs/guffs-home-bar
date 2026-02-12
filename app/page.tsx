@@ -9,8 +9,8 @@ import { UploadForm } from "@/components/UploadForm";
 import { Footer } from "@/components/Footer";
 import { getMemorabilia } from "@/lib/db";
 
-export default function HomePage() {
-  const memorabilia = getMemorabilia();
+export default async function HomePage() {
+  const memorabilia = await getMemorabilia();
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}

@@ -35,3 +35,4 @@ yarn-error.log*
 
 # uploads (user-uploaded images; uncomment to ignore)
 /public/uploads
+.env.local

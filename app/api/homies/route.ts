@@ -3,7 +3,7 @@ import { getHomies } from "@/lib/db";
 
 export async function GET() {
   try {
-    const homies = getHomies();
+    const homies = await getHomies();
     return NextResponse.json(homies);
   } catch (e) {
     console.error(e);

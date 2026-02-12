@@ -3,7 +3,7 @@ import { MemorabiliaForm } from "@/components/admin/MemorabiliaForm";
 import { MemorabiliaList } from "@/components/admin/MemorabiliaList";
 
 export default async function AdminMemorabiliaPage() {
-  const items = getMemorabilia();
+  const items = await getMemorabilia();
   return (
     <div>
       <h1 className="font-display text-2xl text-ink">Memorabilia</h1>

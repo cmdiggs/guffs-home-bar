@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     const imagePath = saveSubmissionFile(buffer, saveName);
-    createSubmission(imagePath, null, guestName, comment);
+    await createSubmission(imagePath, null, guestName, comment);
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
