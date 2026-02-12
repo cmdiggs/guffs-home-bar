@@ -358,6 +358,15 @@ export async function updateSubmissionStatus(id: number, status: "pending" | "ap
   }
 }
 
+export async function deleteSubmission(id: number): Promise<void> {
+  const db = getDb();
+  if (isProduction) {
+    await (db as TursoClient).execute({ sql: "DELETE FROM submissions WHERE id = ?", args: [id] });
+  } else {
+    (db as Database.Database).prepare("DELETE FROM submissions WHERE id = ?").run(id);
+  }
+}
+
 export async function getApprovedSubmissions(): Promise<Submission[]> {
   const db = getDb();
   if (isProduction) {

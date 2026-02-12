@@ -36,23 +36,21 @@ export function UploadForm() {
     const f = e.target.files?.[0];
     if (!f) return;
 
-    // Check for HEIC and show helpful error
-    if (isHeic(f)) {
-      setStatus("error");
-      setMessage("📸 iPhone HEIC photos aren't supported yet. To upload: Tap the Share button on your photo → Save to Files → then upload the converted version here. Or email it to yourself - that converts it too!");
-      if (inputRef.current) inputRef.current.value = "";
-      return;
-    }
-
+    setFile(f);
     setPreviewLoading(true);
     setPreview(null);
     setStatus("idle");
     setMessage("");
 
     try {
-      setFile(f);
+      // For HEIC files, skip preview (will be converted on server)
+      if (isHeic(f)) {
+        setPreview(null);
+        setPreviewLoading(false);
+        return;
+      }
 
-      // Generate preview
+      // Generate preview for non-HEIC images
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string | null;

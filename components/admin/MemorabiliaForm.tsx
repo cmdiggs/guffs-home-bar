@@ -20,13 +20,6 @@ export function MemorabiliaForm({ item, onDone }: { item?: Memorabilia; onDone?:
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
-    // Check for HEIC before submitting
-    if (file && isHeic(file)) {
-      setError("HEIC photos not supported. Please use iPhone's Share → Save to Files to convert to JPEG first, or email the photo to yourself.");
-      return;
-    }
-
     setLoading(true);
 
     try {

@@ -13,6 +13,7 @@
     "@vercel/blob": "^2.2.0",
     "better-sqlite3": "^11.6.0",
     "dotenv": "^17.2.4",
+    "heic-decode": "^2.1.0",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -31,6 +32,7 @@
   },
   "optionalDependencies": {
     "@img/sharp-libvips-dev": "^1.2.4",
+    "@img/sharp-linux-x64": "^0.34.5",
     "@img/sharp-linuxmusl-x64": "^0.34.5"
   }
 }

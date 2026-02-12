@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs";
 import sharp from "sharp";
 import { put } from "@vercel/blob";
+import decode from "heic-decode";
 
 const UPLOADS_DIR = process.env.UPLOADS_PATH ?? path.join(process.cwd(), "public", "uploads");
 const SUBMISSIONS_DIR = path.join(UPLOADS_DIR, "submissions");
@@ -109,13 +110,43 @@ export function validateHomieImageFile(file: {
 }
 
 /**
+ * Detect if buffer is HEIC format
+ */
+function isHeicBuffer(buffer: Buffer): boolean {
+  // HEIC files start with specific bytes
+  const header = buffer.toString('hex', 4, 12);
+  return header === '6674797068656963' || header === '667479706d696631'; // 'ftypheic' or 'ftypmif1'
+}
+
+/**
  * Compress and optimize image using sharp
- * Converts HEIC to JPEG, resizes if too large, and compresses
+ * Converts HEIC to JPEG first if needed, then resizes and compresses
  */
 async function compressImage(buffer: Buffer): Promise<Buffer> {
-  // Force sharp to treat all inputs uniformly and convert to JPEG
-  // This handles HEIC/HEIF conversion issues in serverless environments
-  return sharp(buffer, { failOnError: false })
+  let inputBuffer = buffer;
+
+  // Check if it's HEIC and convert to raw pixel data first
+  if (isHeicBuffer(buffer)) {
+    try {
+      const { width, height, data } = await decode({ buffer });
+      // Convert HEIC raw pixels to PNG, then sharp can handle it
+      inputBuffer = await sharp(data, {
+        raw: {
+          width,
+          height,
+          channels: 4, // RGBA
+        },
+      })
+        .png()
+        .toBuffer();
+    } catch (error) {
+      console.error("HEIC decode failed:", error);
+      throw new Error("Failed to process HEIC image");
+    }
+  }
+
+  // Now compress with sharp
+  return sharp(inputBuffer)
     .resize(MAX_WIDTH, MAX_WIDTH, {
       fit: "inside",
       withoutEnlargement: true,

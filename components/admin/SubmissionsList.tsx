@@ -25,6 +25,13 @@ export function SubmissionsList({ initialSubmissions }: { initialSubmissions: Su
     );
   }
 
+  async function trashPhoto(id: number) {
+    if (!confirm("Delete this photo permanently? This cannot be undone.")) return;
+    const res = await fetch(`/api/admin/submissions/${id}`, { method: "DELETE" });
+    if (!res.ok) return;
+    setSubmissions((prev) => prev.filter((s) => s.id !== id));
+  }
+
   if (submissions.length === 0) {
     return <p className="mt-6 font-sans text-ink/60">No submissions yet.</p>;
   }
@@ -85,6 +92,15 @@ export function SubmissionsList({ initialSubmissions }: { initialSubmissions: Su
                   <span className="text-ink/30">|</span>
                 </>
               )}
+              <button
+                type="button"
+                onClick={() => trashPhoto(s.id)}
+                className="font-sans text-sm text-ink/60 hover:text-red-600 hover:underline"
+                title="Delete photo"
+              >
+                Trash
+              </button>
+              <span className="text-ink/30">|</span>
               <a
                 href={s.imagePath}
                 download

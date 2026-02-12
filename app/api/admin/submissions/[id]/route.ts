@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { getSubmissions, updateSubmissionStatus } from "@/lib/db";
+import { getSubmissions, updateSubmissionStatus, deleteSubmission } from "@/lib/db";
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const id = Number((await params).id);
+  if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  const submissions = await getSubmissions();
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    await deleteSubmission(id);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
+}
 
 export async function PATCH(
   request: NextRequest,
