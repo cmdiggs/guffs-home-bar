@@ -1,19 +1,20 @@
 import Image from "next/image";
 import { GuffsTitle } from "@/components/GuffsTitle";
 import { StorySection } from "@/components/StorySection";
+import { WhatsNewSection } from "@/components/WhatsNewSection";
 import { CocktailBookList } from "@/components/CocktailBookList";
 import { HomiesSection } from "@/components/HomiesSection";
 import { MemorabiliaSection } from "@/components/MemorabiliaSection";
 import { PlaylistSection } from "@/components/PlaylistSection";
 import { UploadForm } from "@/components/UploadForm";
 import { Footer } from "@/components/Footer";
-import { getMemorabilia } from "@/lib/db";
+import { getMemorabilia, getWhatsNew } from "@/lib/db";
 
 // Revalidate every 60 seconds to show newly added content
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const memorabilia = await getMemorabilia();
+  const [memorabilia, whatsNew] = await Promise.all([getMemorabilia(), getWhatsNew()]);
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
@@ -45,6 +46,7 @@ export default async function HomePage() {
 
       {/* Rest of content - single block, no cards */}
       <div className="relative z-10 bg-card">
+        <WhatsNewSection data={whatsNew} />
         <section id="cocktails" className="pt-0">
           <div className="w-full bg-[#1d2130]">
             {/* eslint-disable-next-line @next/next/no-img-element */}

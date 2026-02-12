@@ -9,6 +9,7 @@ const SUBMISSIONS_DIR = path.join(UPLOADS_DIR, "submissions");
 const COCKTAILS_DIR = path.join(UPLOADS_DIR, "cocktails");
 const MEMORABILIA_DIR = path.join(UPLOADS_DIR, "memorabilia");
 const HOMIES_DIR = path.join(UPLOADS_DIR, "homies");
+const WHATS_NEW_DIR = path.join(UPLOADS_DIR, "whats-new");
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -21,7 +22,7 @@ const isProduction = process.env.VERCEL_ENV === "production" || !!process.env.BL
 
 function ensureDirs() {
   if (isProduction) return; // No need to create dirs in production
-  for (const dir of [UPLOADS_DIR, SUBMISSIONS_DIR, COCKTAILS_DIR, MEMORABILIA_DIR, HOMIES_DIR]) {
+  for (const dir of [UPLOADS_DIR, SUBMISSIONS_DIR, COCKTAILS_DIR, MEMORABILIA_DIR, HOMIES_DIR, WHATS_NEW_DIR]) {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   }
 }
@@ -102,6 +103,15 @@ export function validateCocktailImageFile(file: {
 
 /** For homie uploads: allows HEIC/HEIF (converted to JPEG on server). */
 export function validateHomieImageFile(file: {
+  type: string;
+  size: number;
+  name?: string;
+}): { ok: true } | { ok: false; error: string } {
+  return validateImageFile(file);
+}
+
+/** For What's New bottle uploads: allows HEIC/HEIF (converted to JPEG on server). */
+export function validateWhatsNewImageFile(file: {
   type: string;
   size: number;
   name?: string;
@@ -198,4 +208,8 @@ export async function saveMemorabiliaImage(file: Buffer, originalName: string): 
 
 export async function saveHomieImage(file: Buffer, originalName: string): Promise<string> {
   return saveFile(file, originalName, "homies");
+}
+
+export async function saveWhatsNewImage(file: Buffer, originalName: string): Promise<string> {
+  return saveFile(file, originalName, "whats-new");
 }

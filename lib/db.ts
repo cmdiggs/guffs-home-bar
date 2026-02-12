@@ -88,6 +88,14 @@ function runMigrationsSqlite(database: Database.Database) {
       createdAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS whats_new (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      imagePath TEXT NOT NULL,
+      description TEXT NOT NULL,
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
 }
 
 async function runMigrationsTurso(database: TursoClient) {
@@ -127,6 +135,12 @@ async function runMigrationsTurso(database: TursoClient) {
       imagePath TEXT,
       sortOrder INTEGER NOT NULL DEFAULT 0,
       createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS whats_new (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      imagePath TEXT NOT NULL,
+      description TEXT NOT NULL,
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
   ], "write");
 }
@@ -169,6 +183,13 @@ export type Homie = {
   imagePath: string | null;
   sortOrder: number;
   createdAt: string;
+};
+
+export type WhatsNew = {
+  id: number;
+  imagePath: string;
+  description: string;
+  updatedAt: string;
 };
 
 export async function getCocktails(): Promise<Cocktail[]> {
@@ -376,6 +397,32 @@ export async function getApprovedSubmissions(): Promise<Submission[]> {
   return (db as Database.Database)
     .prepare("SELECT * FROM submissions WHERE status = 'approved' ORDER BY createdAt DESC")
     .all() as Submission[];
+}
+
+export async function getWhatsNew(): Promise<WhatsNew | null> {
+  const db = getDb();
+  if (isProduction) {
+    const result = await (db as TursoClient).execute({ sql: "SELECT * FROM whats_new WHERE id = 1", args: [] });
+    return (result.rows[0] as unknown as WhatsNew) ?? null;
+  }
+  return (db as Database.Database).prepare("SELECT * FROM whats_new WHERE id = 1").get() as WhatsNew | null;
+}
+
+export async function upsertWhatsNew(imagePath: string, description: string): Promise<WhatsNew> {
+  const db = getDb();
+  const updatedAt = new Date().toISOString();
+  if (isProduction) {
+    await (db as TursoClient).execute({
+      sql: "INSERT INTO whats_new (id, imagePath, description, updatedAt) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET imagePath = excluded.imagePath, description = excluded.description, updatedAt = excluded.updatedAt",
+      args: [imagePath, description, updatedAt],
+    });
+    const result = await (db as TursoClient).execute({ sql: "SELECT * FROM whats_new WHERE id = 1", args: [] });
+    return result.rows[0] as unknown as WhatsNew;
+  }
+  (db as Database.Database)
+    .prepare("INSERT INTO whats_new (id, imagePath, description, updatedAt) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET imagePath = excluded.imagePath, description = excluded.description, updatedAt = excluded.updatedAt")
+    .run(imagePath, description, updatedAt);
+  return (await getWhatsNew())!;
 }
 
 export async function getHomies(): Promise<Homie[]> {
