@@ -9,7 +9,7 @@ const COCKTAILS_DIR = path.join(UPLOADS_DIR, "cocktails");
 const MEMORABILIA_DIR = path.join(UPLOADS_DIR, "memorabilia");
 const HOMIES_DIR = path.join(UPLOADS_DIR, "homies");
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
 // Compression settings
@@ -62,9 +62,15 @@ export function validateImageFile(file: {
   name?: string;
 }): { ok: true } | { ok: false; error: string } {
   const isHeic = isHeicFile(file);
-  const allowed = isHeic || ALLOWED_TYPES.includes(file.type);
+  if (isHeic) {
+    return {
+      ok: false,
+      error: "HEIC files are not currently supported. Please convert to JPEG first (you can use your iPhone's 'Share' menu to convert)."
+    };
+  }
+  const allowed = ALLOWED_TYPES.includes(file.type);
   if (!allowed) {
-    return { ok: false, error: "Invalid file type. Use JPEG, PNG, WebP, GIF, or HEIC (iPhone photos)." };
+    return { ok: false, error: "Invalid file type. Use JPEG, PNG, WebP, or GIF." };
   }
   if (file.size > MAX_SIZE_BYTES) {
     return { ok: false, error: "File too large. Maximum size is 10MB." };
@@ -113,7 +119,9 @@ export function validateHomieImageFile(file: {
  * Converts HEIC to JPEG, resizes if too large, and compresses
  */
 async function compressImage(buffer: Buffer): Promise<Buffer> {
-  return sharp(buffer)
+  // Force sharp to treat all inputs uniformly and convert to JPEG
+  // This handles HEIC/HEIF conversion issues in serverless environments
+  return sharp(buffer, { failOnError: false })
     .resize(MAX_WIDTH, MAX_WIDTH, {
       fit: "inside",
       withoutEnlargement: true,
