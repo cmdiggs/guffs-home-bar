@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: siteDescription,
   icons: { icon: "/guffs-logo.svg" },
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://guffs.com"
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://noguffs.com"
   ),
   openGraph: {
     type: "website",
