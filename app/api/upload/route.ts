@@ -40,11 +40,11 @@ export async function POST(request: Request) {
     if (isHeicFile({ type: file.type, name: file.name })) {
       try {
         const jpegBuffer = await convert({
-          buffer,
+          buffer: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
           format: "JPEG",
           quality: 0.9,
         });
-        buffer = Buffer.isBuffer(jpegBuffer) ? jpegBuffer : Buffer.from(jpegBuffer as ArrayBuffer | Uint8Array);
+        buffer = Buffer.from(jpegBuffer);
         saveName = file.name.replace(/\.(heic|heif)$/i, ".jpg") || "photo.jpg";
       } catch (convertErr) {
         console.error("HEIC conversion failed:", convertErr);
