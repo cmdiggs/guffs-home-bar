@@ -37,9 +37,6 @@ export function HomiesSection() {
       {/* Approved visitor photos – slider on mobile, horizontal scroll with snap */}
       {submissions.length > 0 && (
         <div className="mb-10">
-          <h3 className="font-sans text-lg font-semibold text-foreground mb-4">
-            At Guffs
-          </h3>
           <div
             className="visitor-photos-slider flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-4 px-4 md:mx-0 md:px-0 touch-pan-x"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}

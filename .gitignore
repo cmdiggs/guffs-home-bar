@@ -34,5 +34,5 @@ yarn-error.log*
 /data/*.db-wal
 
 # uploads (user-uploaded images; uncomment to ignore)
-/public/uploads
+# /public/uploads
 .env.local
