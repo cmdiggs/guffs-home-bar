@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
       const buffer = Buffer.from(await file.arrayBuffer());
-      imagePath = saveCocktailImage(buffer, file.name);
+      imagePath = await saveCocktailImage(buffer, file.name);
     } else {
       imagePath = "/guffs-logo.svg";
     }

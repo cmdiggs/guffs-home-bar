@@ -26,7 +26,7 @@ export async function PATCH(
         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
       const buffer = Buffer.from(await file.arrayBuffer());
-      imagePath = saveCocktailImage(buffer, file.name);
+      imagePath = await saveCocktailImage(buffer, file.name);
     }
     await updateCocktail(id, {
       name: name ?? existing.name,

@@ -12,14 +12,13 @@
     "@libsql/client": "^0.17.0",
     "better-sqlite3": "^11.6.0",
     "dotenv": "^17.2.4",
-    "heic-convert": "^2.1.0",
     "next": "^15.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
-    "@types/heic-convert": "^2.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

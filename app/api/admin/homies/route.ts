@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
       const buffer = Buffer.from(await file.arrayBuffer());
-      imagePath = saveHomieImage(buffer, file.name);
+      imagePath = await saveHomieImage(buffer, file.name);
     }
     const homie = await createHomie(name, "", description, imagePath);
     return NextResponse.json(homie);

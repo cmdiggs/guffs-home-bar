@@ -24,7 +24,7 @@ export async function PATCH(
         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
       const buffer = Buffer.from(await file.arrayBuffer());
-      imagePath = saveHomieImage(buffer, file.name);
+      imagePath = await saveHomieImage(buffer, file.name);
     }
     await updateHomie(id, {
       name: name ?? existing.name,

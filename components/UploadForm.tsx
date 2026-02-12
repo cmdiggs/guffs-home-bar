@@ -41,11 +41,9 @@ export function UploadForm() {
 
     try {
       if (isHeic(f)) {
-        const convert = (await import("heic-convert/browser")).default;
-        const buffer = await f.arrayBuffer();
-        const jpegBuffer = await convert({ buffer, format: "JPEG", quality: 0.9 });
-        const blob = new Blob([jpegBuffer], { type: "image/jpeg" });
-        setPreview(URL.createObjectURL(blob));
+        // HEIC files will be converted on the server - no preview needed
+        setPreview(null);
+        setPreviewLoading(false);
       } else {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -58,15 +56,8 @@ export function UploadForm() {
         return;
       }
     } catch {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string | null;
-        if (result) setPreview(result);
-        setPreviewLoading(false);
-      };
-      reader.onerror = () => setPreviewLoading(false);
-      reader.readAsDataURL(f);
-      return;
+      setPreview(null);
+      setPreviewLoading(false);
     }
     setPreviewLoading(false);
   }
