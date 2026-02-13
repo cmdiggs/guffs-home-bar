@@ -38,6 +38,9 @@ export function HomiesList({ initialHomies }: { initialHomies: Homie[] }) {
     if (res.ok) {
       const updated = await res.json();
       setHomies((prev) => prev.map((h) => (h.id === id ? { ...h, imageRotation: updated.imageRotation ?? next } : h)));
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error ?? `Rotate failed (${res.status})`);
     }
   }
 
@@ -52,7 +55,12 @@ export function HomiesList({ initialHomies }: { initialHomies: Homie[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
     });
-    if (res.ok) setHomies(newOrder);
+    if (res.ok) {
+      setHomies(newOrder);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error ?? `Reorder failed (${res.status})`);
+    }
   }
 
   function onDragStart(e: React.DragEvent, index: number) {

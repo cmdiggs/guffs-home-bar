@@ -32,7 +32,11 @@ export function SubmissionsList({ initialSubmissions }: { initialSubmissions: Su
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageRotation: next }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error ?? `Rotate failed (${res.status})`);
+      return;
+    }
     setSubmissions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, imageRotation: next } : s))
     );

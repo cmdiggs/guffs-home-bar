@@ -14,6 +14,26 @@ function ensureDataDir() {
 let sqliteDb: Database.Database | null = null;
 let tursoDb: TursoClient | null = null;
 
+async function ensureImageRotationColumnsTurso(client: TursoClient) {
+  const tables = ["cocktails", "memorabilia", "homies", "submissions"];
+  for (const table of tables) {
+    try {
+      await client.execute(
+        `ALTER TABLE ${table} ADD COLUMN imageRotation INTEGER NOT NULL DEFAULT 0`
+      );
+    } catch (_) {
+      // Column already exists or other error - ignore
+    }
+  }
+}
+
+/** Call before using imageRotation in production (Turso). Idempotent. */
+export async function ensureTursoImageRotationColumns(): Promise<void> {
+  if (!isProduction) return;
+  const client = getDb() as TursoClient;
+  await ensureImageRotationColumnsTurso(client);
+}
+
 function getDb() {
   if (isProduction) {
     if (!tursoDb) {
@@ -21,8 +41,6 @@ function getDb() {
         url: process.env.TURSO_DATABASE_URL!,
         authToken: process.env.TURSO_AUTH_TOKEN!,
       });
-      // Tables already exist in Turso from migration script
-      // No need to run migrations on every request
     }
     return tursoDb;
   } else {

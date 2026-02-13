@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { getHomieById, updateHomie } from "@/lib/db";
+import { ensureTursoImageRotationColumns, getHomieById, updateHomie } from "@/lib/db";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await ensureTursoImageRotationColumns();
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   const existing = await getHomieById(id);

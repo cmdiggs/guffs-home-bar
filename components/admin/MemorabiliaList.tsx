@@ -38,6 +38,9 @@ export function MemorabiliaList({ initialItems }: { initialItems: Memorabilia[] 
     if (res.ok) {
       const updated = await res.json();
       setItems((prev) => prev.map((i) => (i.id === id ? { ...i, imageRotation: updated.imageRotation ?? next } : i)));
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error ?? `Rotate failed (${res.status})`);
     }
   }
 
@@ -52,7 +55,12 @@ export function MemorabiliaList({ initialItems }: { initialItems: Memorabilia[] 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
     });
-    if (res.ok) setItems(newOrder);
+    if (res.ok) {
+      setItems(newOrder);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error ?? `Reorder failed (${res.status})`);
+    }
   }
 
   function onDragStart(e: React.DragEvent, index: number) {

@@ -38,6 +38,9 @@ export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail
     if (res.ok) {
       const updated = await res.json();
       setCocktails((prev) => prev.map((c) => (c.id === id ? { ...c, imageRotation: updated.imageRotation ?? next } : c)));
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error ?? `Rotate failed (${res.status})`);
     }
   }
 
@@ -52,7 +55,12 @@ export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
     });
-    if (res.ok) setCocktails(newOrder);
+    if (res.ok) {
+      setCocktails(newOrder);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error ?? `Reorder failed (${res.status})`);
+    }
   }
 
   function onDragStart(e: React.DragEvent, index: number) {

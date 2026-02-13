@@ -22,7 +22,7 @@ export function AdminImageWithRotation({
   return (
     <div className="relative h-full w-full overflow-hidden">
       <div
-        className="h-full w-full"
+        className="absolute inset-0"
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center center",

@@ -8,14 +8,13 @@ import { MemorabiliaSection } from "@/components/MemorabiliaSection";
 import { PlaylistSection } from "@/components/PlaylistSection";
 import { UploadForm } from "@/components/UploadForm";
 import { Footer } from "@/components/Footer";
-import { getMemorabilia, getWhatsNew } from "@/lib/db";
+import { getWhatsNew } from "@/lib/db";
 
 // Revalidate every 60 seconds to show newly added content
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [memorabilia, whatsNew] = await Promise.all([getMemorabilia(), getWhatsNew()]);
-  const memorabiliaPlain = JSON.parse(JSON.stringify(memorabilia)) as typeof memorabilia;
+  const whatsNew = await getWhatsNew();
   const whatsNewPlain = whatsNew ? (JSON.parse(JSON.stringify(whatsNew)) as typeof whatsNew) : null;
   return (
     <div className="min-h-screen bg-background">
@@ -75,7 +74,7 @@ export default async function HomePage() {
           </div>
         </section>
         <HomiesSection />
-        <MemorabiliaSection items={memorabiliaPlain} />
+        <MemorabiliaSection />
         <PlaylistSection />
         <section id="share-your-visit" className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto">

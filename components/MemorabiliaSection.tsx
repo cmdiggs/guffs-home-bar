@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { Memorabilia } from "@/lib/db";
 import { ImageLightbox } from "@/components/ImageLightbox";
 
-type Props = { items: Memorabilia[] };
-
-export function MemorabiliaSection({ items }: Props) {
+export function MemorabiliaSection() {
+  const [items, setItems] = useState<Memorabilia[]>([]);
+  const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<{ src: string; alt: string; rotation?: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/memorabilia")
+      .then((r) => r.json())
+      .then((data) => setItems(Array.isArray(data) ? data : []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <section className="container mx-auto px-4 py-12 bg-secondary/30" id="memorabilia">
@@ -19,7 +27,11 @@ export function MemorabiliaSection({ items }: Props) {
         </h2>
       </div>
 
-      {items.length === 0 ? (
+      {loading ? (
+        <div className="rounded-xl border border-border/50 bg-card py-12 text-center">
+          <p className="text-muted-foreground">Loading…</p>
+        </div>
+      ) : items.length === 0 ? (
         <div className="rounded-xl border border-border/50 bg-card py-12 text-center">
           <p className="text-muted-foreground">No memorabilia featured yet. Check back soon!</p>
         </div>
