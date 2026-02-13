@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { getWhatsNew, upsertWhatsNew } from "@/lib/db";
+import { getWhatsNew, upsertWhatsNew, deleteWhatsNew } from "@/lib/db";
 import { saveWhatsNewImage, validateWhatsNewImageFile } from "@/lib/storage";
+
+export async function DELETE() {
+  if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    await deleteWhatsNew();
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
+}
 
 export async function GET() {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

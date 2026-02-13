@@ -15,6 +15,8 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const [memorabilia, whatsNew] = await Promise.all([getMemorabilia(), getWhatsNew()]);
+  const memorabiliaPlain = JSON.parse(JSON.stringify(memorabilia)) as typeof memorabilia;
+  const whatsNewPlain = whatsNew ? (JSON.parse(JSON.stringify(whatsNew)) as typeof whatsNew) : null;
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
@@ -46,7 +48,7 @@ export default async function HomePage() {
 
       {/* Rest of content - single block, no cards */}
       <div className="relative z-10 bg-card">
-        <WhatsNewSection data={whatsNew} />
+        <WhatsNewSection data={whatsNewPlain} />
         <section id="cocktails" className="pt-0">
           <div className="w-full bg-[#1d2130]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -73,7 +75,7 @@ export default async function HomePage() {
           </div>
         </section>
         <HomiesSection />
-        <MemorabiliaSection items={memorabilia} />
+        <MemorabiliaSection items={memorabiliaPlain} />
         <PlaylistSection />
         <section id="share-your-visit" className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto">

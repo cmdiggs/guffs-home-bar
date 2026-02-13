@@ -402,7 +402,12 @@ export async function getApprovedSubmissions(): Promise<Submission[]> {
 export async function getWhatsNew(): Promise<WhatsNew | null> {
   const db = getDb();
   if (isProduction) {
-    const result = await (db as TursoClient).execute({ sql: "SELECT * FROM whats_new WHERE id = 1", args: [] });
+    const client = db as TursoClient;
+    await client.execute({
+      sql: "CREATE TABLE IF NOT EXISTS whats_new (id INTEGER PRIMARY KEY CHECK (id = 1), imagePath TEXT NOT NULL, description TEXT NOT NULL, updatedAt TEXT NOT NULL DEFAULT (datetime('now')))",
+      args: [],
+    });
+    const result = await client.execute({ sql: "SELECT * FROM whats_new WHERE id = 1", args: [] });
     return (result.rows[0] as unknown as WhatsNew) ?? null;
   }
   return (db as Database.Database).prepare("SELECT * FROM whats_new WHERE id = 1").get() as WhatsNew | null;
@@ -412,17 +417,32 @@ export async function upsertWhatsNew(imagePath: string, description: string): Pr
   const db = getDb();
   const updatedAt = new Date().toISOString();
   if (isProduction) {
-    await (db as TursoClient).execute({
+    const client = db as TursoClient;
+    await client.execute({
+      sql: "CREATE TABLE IF NOT EXISTS whats_new (id INTEGER PRIMARY KEY CHECK (id = 1), imagePath TEXT NOT NULL, description TEXT NOT NULL, updatedAt TEXT NOT NULL DEFAULT (datetime('now')))",
+      args: [],
+    });
+    await client.execute({
       sql: "INSERT INTO whats_new (id, imagePath, description, updatedAt) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET imagePath = excluded.imagePath, description = excluded.description, updatedAt = excluded.updatedAt",
       args: [imagePath, description, updatedAt],
     });
-    const result = await (db as TursoClient).execute({ sql: "SELECT * FROM whats_new WHERE id = 1", args: [] });
+    const result = await client.execute({ sql: "SELECT * FROM whats_new WHERE id = 1", args: [] });
     return result.rows[0] as unknown as WhatsNew;
   }
-  (db as Database.Database)
+    (db as Database.Database)
     .prepare("INSERT INTO whats_new (id, imagePath, description, updatedAt) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET imagePath = excluded.imagePath, description = excluded.description, updatedAt = excluded.updatedAt")
     .run(imagePath, description, updatedAt);
   return (await getWhatsNew())!;
+}
+
+export async function deleteWhatsNew(): Promise<void> {
+  const db = getDb();
+  if (isProduction) {
+    const client = db as TursoClient;
+    await client.execute({ sql: "DELETE FROM whats_new WHERE id = 1", args: [] });
+  } else {
+    (db as Database.Database).prepare("DELETE FROM whats_new WHERE id = 1").run();
+  }
 }
 
 export async function getHomies(): Promise<Homie[]> {

@@ -1,0 +1,1 @@
+{"location":"lib/db.ts:getWhatsNew","message":"getWhatsNew before query","data":{"isProduction":true},"timestamp":1770933105579,"hypothesisId":"H2"}

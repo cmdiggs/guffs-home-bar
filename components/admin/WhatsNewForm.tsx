@@ -7,6 +7,7 @@ export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
   const [description, setDescription] = useState(initial?.description ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [trashing, setTrashing] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -31,6 +32,25 @@ export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
       setError("Something went wrong.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleTrash() {
+    if (!confirm("Remove the What's New section from the homepage? You can add it again anytime.")) return;
+    setError("");
+    setTrashing(true);
+    try {
+      const res = await fetch("/api/admin/whats-new", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Failed to delete.");
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setError("Something went wrong.");
+    } finally {
+      setTrashing(false);
     }
   }
 
@@ -62,7 +82,7 @@ export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
           />
         </div>
       </div>
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="submit"
           disabled={loading}
@@ -70,6 +90,20 @@ export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
         >
           {loading ? "Saving…" : "Update"}
         </button>
+        {initial && (
+          <>
+            <span className="text-ink/30">|</span>
+            <button
+              type="button"
+              onClick={handleTrash}
+              disabled={trashing}
+              className="font-sans text-sm text-ink/60 hover:text-red-600 hover:underline disabled:opacity-60"
+              title="Remove What's New from homepage"
+            >
+              {trashing ? "Removing…" : "Trash"}
+            </button>
+          </>
+        )}
       </div>
       {error && <p className="mt-2 font-sans text-sm text-red-600">{error}</p>}
     </form>
