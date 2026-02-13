@@ -18,7 +18,11 @@ export const metadata: Metadata = {
     template: `%s | ${siteName}`,
   },
   description: siteDescription,
-  icons: { icon: "/guffs-logo.svg" },
+  icons: {
+    icon: "/guffs-fav.svg",
+    apple: "/guffs-fav.svg",
+  },
+  manifest: "/manifest.json",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://noguffs.com"
   ),

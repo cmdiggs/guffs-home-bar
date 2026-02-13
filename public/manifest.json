@@ -1,0 +1,17 @@
+{
+  "name": "Guffs",
+  "short_name": "Guffs",
+  "description": "Guffs is about belonging. A bar to gather, celebrate, and feel at home.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2e3144",
+  "theme_color": "#2e3144",
+  "icons": [
+    {
+      "src": "/guffs-fav.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

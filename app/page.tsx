@@ -70,7 +70,7 @@ export default async function HomePage() {
                 Guffs&apos; Cocktails
               </h2>
             </div>
-            <CocktailBookList />
+            <CocktailBookList limit={10} />
           </div>
         </section>
         <HomiesSection />
