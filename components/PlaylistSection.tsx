@@ -21,9 +21,9 @@ export function PlaylistSection() {
           <img
             src="/guffs-playlist.png"
             alt="Guffs Playlist — album cover with vinyl"
-            width={680}
-            height={680}
-            className="w-full h-auto max-w-[420px] lg:max-w-[680px] object-contain"
+            width={800}
+            height={800}
+            className="h-auto w-[95vw] max-w-full object-contain"
           />
         </div>
 
