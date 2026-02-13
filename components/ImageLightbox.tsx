@@ -8,9 +8,10 @@ type Props = {
   alt: string;
   open: boolean;
   onClose: () => void;
+  rotation?: number;
 };
 
-export function ImageLightbox({ src, alt, open, onClose }: Props) {
+export function ImageLightbox({ src, alt, open, onClose, rotation = 0 }: Props) {
   useEffect(() => {
     if (!open) return;
     const handleEscape = (e: KeyboardEvent) => {
@@ -50,14 +51,16 @@ export function ImageLightbox({ src, alt, open, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
         role="presentation"
       >
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          className="object-contain"
-          sizes="(max-width: 1280px) 100vw, 1280px"
-          unoptimized={src.startsWith("/uploads/")}
-        />
+        <div className="h-full w-full" style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center center" }}>
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            className="object-contain"
+            sizes="(max-width: 1280px) 100vw, 1280px"
+            unoptimized={src.startsWith("/uploads/")}
+          />
+        </div>
       </div>
     </div>
   );

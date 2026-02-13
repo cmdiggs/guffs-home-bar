@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { getSubmissions, updateSubmissionStatus, deleteSubmission } from "@/lib/db";
+import { getSubmissions, updateSubmissionStatus, updateSubmissionImageRotation, deleteSubmission } from "@/lib/db";
 
 export async function DELETE(
   _request: NextRequest,
@@ -34,11 +34,17 @@ export async function PATCH(
   try {
     const body = await request.json();
     const status = body?.status;
-    if (status !== "approved" && status !== "denied" && status !== "pending") {
-      return NextResponse.json({ error: "status must be approved, denied, or pending" }, { status: 400 });
+    const imageRotation = body?.imageRotation;
+    if (status !== undefined) {
+      if (status !== "approved" && status !== "denied" && status !== "pending") {
+        return NextResponse.json({ error: "status must be approved, denied, or pending" }, { status: 400 });
+      }
+      await updateSubmissionStatus(id, status);
     }
-    await updateSubmissionStatus(id, status);
-    return NextResponse.json({ ok: true, status });
+    if (typeof imageRotation === "number" && [0, 90, 180, 270].includes(imageRotation)) {
+      await updateSubmissionImageRotation(id, imageRotation);
+    }
+    return NextResponse.json({ ok: true, status, imageRotation });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });

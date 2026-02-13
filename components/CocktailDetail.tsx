@@ -35,14 +35,16 @@ export function CocktailDetail({ cocktail, onClose }: Props) {
           </svg>
         </button>
         {hasImage && (
-          <div className="relative aspect-[4/3] bg-secondary">
-            <Image
-              src={cocktail.imagePath}
-              alt={cocktail.name}
-              fill
-              className="object-cover"
-              sizes="512px"
-            />
+          <div className="relative aspect-[4/3] bg-secondary overflow-hidden">
+            <div className="h-full w-full" style={{ transform: `rotate(${cocktail.imageRotation ?? 0}deg)`, transformOrigin: "center center" }}>
+              <Image
+                src={cocktail.imagePath}
+                alt={cocktail.name}
+                fill
+                className="object-cover"
+                sizes="512px"
+              />
+            </div>
           </div>
         )}
         <CardHeader>

@@ -4,10 +4,23 @@ import { useState } from "react";
 import Image from "next/image";
 import type { Memorabilia } from "@/lib/db";
 import { MemorabiliaForm } from "./MemorabiliaForm";
+import { AdminImageWithRotation } from "./AdminImageWithRotation";
+
+const GripIcon = () => (
+  <svg className="h-5 w-5 text-ink/50" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <circle cx="9" cy="6" r="1.5" />
+    <circle cx="9" cy="12" r="1.5" />
+    <circle cx="9" cy="18" r="1.5" />
+    <circle cx="15" cy="6" r="1.5" />
+    <circle cx="15" cy="12" r="1.5" />
+    <circle cx="15" cy="18" r="1.5" />
+  </svg>
+);
 
 export function MemorabiliaList({ initialItems }: { initialItems: Memorabilia[] }) {
   const [items, setItems] = useState(initialItems);
   const [editing, setEditing] = useState<Memorabilia | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this item?")) return;
@@ -15,11 +28,24 @@ export function MemorabiliaList({ initialItems }: { initialItems: Memorabilia[] 
     if (res.ok) setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
-  async function handleMove(index: number, direction: "up" | "down") {
+  async function handleRotate(id: number, currentRotation: number) {
+    const next = (currentRotation + 90) % 360;
+    const res = await fetch(`/api/admin/memorabilia/${id}/rotate`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageRotation: next }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, imageRotation: updated.imageRotation ?? next } : i)));
+    }
+  }
+
+  async function handleReorder(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return;
     const newOrder = [...items];
-    const swap = direction === "up" ? index - 1 : index + 1;
-    if (swap < 0 || swap >= newOrder.length) return;
-    [newOrder[index], newOrder[swap]] = [newOrder[swap], newOrder[index]];
+    const [removed] = newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, removed);
     const ids = newOrder.map((i) => i.id);
     const res = await fetch("/api/admin/memorabilia/reorder", {
       method: "PATCH",
@@ -29,46 +55,71 @@ export function MemorabiliaList({ initialItems }: { initialItems: Memorabilia[] 
     if (res.ok) setItems(newOrder);
   }
 
+  function onDragStart(e: React.DragEvent, index: number) {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
+  }
+
+  function onDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+
+  function onDrop(e: React.DragEvent, dropIndex: number) {
+    e.preventDefault();
+    setDraggedIndex(null);
+    const fromIndex = draggedIndex ?? parseInt(e.dataTransfer.getData("text/plain"), 10);
+    if (Number.isNaN(fromIndex) || fromIndex === dropIndex) return;
+    handleReorder(fromIndex, dropIndex);
+  }
+
+  function onDragEnd() {
+    setDraggedIndex(null);
+  }
+
   return (
     <div className="mt-8">
       <h2 className="font-display text-lg text-ink">All items</h2>
       {editing ? (
         <MemorabiliaForm item={editing} onDone={() => setEditing(null)} />
       ) : null}
+      <p className="mt-1 font-sans text-sm text-ink/60">Drag rows to reorder.</p>
       <ul className="mt-4 space-y-4">
         {items.map((i, index) => (
           <li
             key={i.id}
-            className="flex flex-col gap-3 rounded-xl border border-black/10 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
+            draggable
+            onDragStart={(e) => onDragStart(e, index)}
+            onDragOver={onDragOver}
+            onDrop={(e) => onDrop(e, index)}
+            onDragEnd={onDragEnd}
+            className={`flex cursor-grab flex-col gap-3 rounded-xl border border-black/10 bg-white p-4 shadow-sm transition-opacity active:cursor-grabbing sm:flex-row sm:items-center ${draggedIndex === index ? "opacity-50" : ""}`}
           >
-            <div className="flex shrink-0 flex-col gap-0.5">
-              <button
-                type="button"
-                onClick={() => handleMove(index, "up")}
-                disabled={index === 0}
-                className="rounded border border-black/20 p-1.5 text-ink hover:bg-black/5 disabled:opacity-40"
-                aria-label="Move up"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMove(index, "down")}
-                disabled={index === items.length - 1}
-                className="rounded border border-black/20 p-1.5 text-ink hover:bg-black/5 disabled:opacity-40"
-                aria-label="Move down"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </button>
+            <div className="flex shrink-0 items-center pr-2" aria-label="Drag to reorder">
+              <GripIcon />
             </div>
             <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded bg-black/5">
-              <Image src={i.imagePath} alt={i.title} fill className="object-cover" />
+              <AdminImageWithRotation
+                src={i.imagePath}
+                alt={i.title}
+                rotation={(i as Memorabilia).imageRotation ?? 0}
+                sizes="128px"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-display text-lg text-ink">{i.title}</p>
               <p className="font-sans text-sm text-ink/70 line-clamp-2">{i.description}</p>
             </div>
             <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleRotate(i.id, (i as Memorabilia).imageRotation ?? 0)}
+                className="rounded border border-black/20 px-3 py-1.5 font-sans text-sm text-ink hover:bg-black/5"
+                title="Rotate image 90°"
+              >
+                Rotate
+              </button>
               <button
                 type="button"
                 onClick={() => setEditing(i)}

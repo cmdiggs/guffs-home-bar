@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import type { Submission } from "@/lib/db";
+import { AdminImageWithRotation } from "./AdminImageWithRotation";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending",
@@ -25,6 +25,19 @@ export function SubmissionsList({ initialSubmissions }: { initialSubmissions: Su
     );
   }
 
+  async function handleRotate(id: number, currentRotation: number) {
+    const next = (currentRotation + 90) % 360;
+    const res = await fetch(`/api/admin/submissions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageRotation: next }),
+    });
+    if (!res.ok) return;
+    setSubmissions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, imageRotation: next } : s))
+    );
+  }
+
   async function trashPhoto(id: number) {
     if (!confirm("Delete this photo permanently? This cannot be undone.")) return;
     const res = await fetch(`/api/admin/submissions/${id}`, { method: "DELETE" });
@@ -41,11 +54,10 @@ export function SubmissionsList({ initialSubmissions }: { initialSubmissions: Su
         <li key={s.id} className="rounded-xl border border-black/10 bg-white overflow-hidden shadow-sm">
           <a href={s.imagePath} target="_blank" rel="noopener noreferrer" className="block">
             <div className="relative aspect-[4/3] bg-black/5">
-              <Image
+              <AdminImageWithRotation
                 src={s.imagePath}
                 alt={s.guestName ?? s.caption ?? "Guest photo"}
-                fill
-                className="object-cover hover:opacity-95"
+                rotation={s.imageRotation ?? 0}
                 sizes="(max-width: 768px) 100vw, 320px"
               />
               <span
@@ -99,6 +111,15 @@ export function SubmissionsList({ initialSubmissions }: { initialSubmissions: Su
                 title="Delete photo"
               >
                 Trash
+              </button>
+              <span className="text-ink/30">|</span>
+              <button
+                type="button"
+                onClick={() => handleRotate(s.id, s.imageRotation ?? 0)}
+                className="font-sans text-sm text-ink/60 hover:text-ink hover:underline"
+                title="Rotate image 90°"
+              >
+                Rotate
               </button>
               <span className="text-ink/30">|</span>
               <a

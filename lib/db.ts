@@ -96,6 +96,13 @@ function runMigrationsSqlite(database: Database.Database) {
       updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+  // Optional imageRotation (0, 90, 180, 270) for fixing orientation
+  for (const table of ["cocktails", "memorabilia", "homies", "submissions"]) {
+    const cols = database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!cols.some((c) => c.name === "imageRotation")) {
+      database.exec(`ALTER TABLE ${table} ADD COLUMN imageRotation INTEGER NOT NULL DEFAULT 0`);
+    }
+  }
 }
 
 async function runMigrationsTurso(database: TursoClient) {
@@ -154,6 +161,7 @@ export type Cocktail = {
   createdAt: string;
   friendName: string | null;
   ingredients: string | null;
+  imageRotation?: number;
 };
 
 export type Memorabilia = {
@@ -163,6 +171,7 @@ export type Memorabilia = {
   imagePath: string;
   sortOrder: number;
   createdAt: string;
+  imageRotation?: number;
 };
 
 export type Submission = {
@@ -173,6 +182,7 @@ export type Submission = {
   guestName: string | null;
   comment: string | null;
   status: "pending" | "approved" | "denied";
+  imageRotation?: number;
 };
 
 export type Homie = {
@@ -183,6 +193,7 @@ export type Homie = {
   imagePath: string | null;
   sortOrder: number;
   createdAt: string;
+  imageRotation?: number;
 };
 
 export type WhatsNew = {
@@ -242,6 +253,7 @@ export async function updateCocktail(
     sortOrder?: number;
     friendName?: string | null;
     ingredients?: string | null;
+    imageRotation?: number;
   }
 ): Promise<void> {
   const row = await getCocktailById(id);
@@ -252,17 +264,18 @@ export async function updateCocktail(
   const sortOrder = data.sortOrder ?? row.sortOrder;
   const friendName = data.friendName !== undefined ? data.friendName : row.friendName;
   const ingredients = data.ingredients !== undefined ? data.ingredients : row.ingredients;
+  const imageRotation = data.imageRotation ?? (row as Cocktail).imageRotation ?? 0;
 
   const db = getDb();
   if (isProduction) {
     await (db as TursoClient).execute({
-      sql: "UPDATE cocktails SET name = ?, description = ?, imagePath = ?, sortOrder = ?, friendName = ?, ingredients = ? WHERE id = ?",
-      args: [name, description, imagePath, sortOrder, friendName, ingredients, id]
+      sql: "UPDATE cocktails SET name = ?, description = ?, imagePath = ?, sortOrder = ?, friendName = ?, ingredients = ?, imageRotation = ? WHERE id = ?",
+      args: [name, description, imagePath, sortOrder, friendName, ingredients, imageRotation, id]
     });
   } else {
     (db as Database.Database)
-      .prepare("UPDATE cocktails SET name = ?, description = ?, imagePath = ?, sortOrder = ?, friendName = ?, ingredients = ? WHERE id = ?")
-      .run(name, description, imagePath, sortOrder, friendName, ingredients, id);
+      .prepare("UPDATE cocktails SET name = ?, description = ?, imagePath = ?, sortOrder = ?, friendName = ?, ingredients = ?, imageRotation = ? WHERE id = ?")
+      .run(name, description, imagePath, sortOrder, friendName, ingredients, imageRotation, id);
   }
 }
 
@@ -326,7 +339,7 @@ export async function createMemorabilia(title: string, description: string, imag
 
 export async function updateMemorabilia(
   id: number,
-  data: { title?: string; description?: string; imagePath?: string; sortOrder?: number }
+  data: { title?: string; description?: string; imagePath?: string; sortOrder?: number; imageRotation?: number }
 ): Promise<void> {
   const row = await getMemorabiliaById(id);
   if (!row) return;
@@ -334,15 +347,16 @@ export async function updateMemorabilia(
   const description = data.description ?? row.description;
   const imagePath = data.imagePath ?? row.imagePath;
   const sortOrder = data.sortOrder ?? row.sortOrder;
+  const imageRotation = data.imageRotation ?? (row as Memorabilia).imageRotation ?? 0;
 
   const db = getDb();
   if (isProduction) {
     await (db as TursoClient).execute({
-      sql: "UPDATE memorabilia SET title = ?, description = ?, imagePath = ?, sortOrder = ? WHERE id = ?",
-      args: [title, description, imagePath, sortOrder, id]
+      sql: "UPDATE memorabilia SET title = ?, description = ?, imagePath = ?, sortOrder = ?, imageRotation = ? WHERE id = ?",
+      args: [title, description, imagePath, sortOrder, imageRotation, id]
     });
   } else {
-    (db as Database.Database).prepare("UPDATE memorabilia SET title = ?, description = ?, imagePath = ?, sortOrder = ? WHERE id = ?").run(title, description, imagePath, sortOrder, id);
+    (db as Database.Database).prepare("UPDATE memorabilia SET title = ?, description = ?, imagePath = ?, sortOrder = ?, imageRotation = ? WHERE id = ?").run(title, description, imagePath, sortOrder, imageRotation, id);
   }
 }
 
@@ -406,6 +420,15 @@ export async function updateSubmissionStatus(id: number, status: "pending" | "ap
     await (db as TursoClient).execute({ sql: "UPDATE submissions SET status = ? WHERE id = ?", args: [status, id] });
   } else {
     (db as Database.Database).prepare("UPDATE submissions SET status = ? WHERE id = ?").run(status, id);
+  }
+}
+
+export async function updateSubmissionImageRotation(id: number, imageRotation: number): Promise<void> {
+  const db = getDb();
+  if (isProduction) {
+    await (db as TursoClient).execute({ sql: "UPDATE submissions SET imageRotation = ? WHERE id = ?", args: [imageRotation, id] });
+  } else {
+    (db as Database.Database).prepare("UPDATE submissions SET imageRotation = ? WHERE id = ?").run(imageRotation, id);
   }
 }
 
@@ -517,7 +540,7 @@ export async function createHomie(
 
 export async function updateHomie(
   id: number,
-  data: { name?: string; title?: string; description?: string; imagePath?: string | null; sortOrder?: number }
+  data: { name?: string; title?: string; description?: string; imagePath?: string | null; sortOrder?: number; imageRotation?: number }
 ): Promise<void> {
   const row = await getHomieById(id);
   if (!row) return;
@@ -526,17 +549,18 @@ export async function updateHomie(
   const description = data.description ?? row.description;
   const imagePath = data.imagePath !== undefined ? data.imagePath : row.imagePath;
   const sortOrder = data.sortOrder ?? row.sortOrder;
+  const imageRotation = data.imageRotation ?? (row as Homie).imageRotation ?? 0;
 
   const db = getDb();
   if (isProduction) {
     await (db as TursoClient).execute({
-      sql: "UPDATE homies SET name = ?, title = ?, description = ?, imagePath = ?, sortOrder = ? WHERE id = ?",
-      args: [name, title, description, imagePath, sortOrder, id]
+      sql: "UPDATE homies SET name = ?, title = ?, description = ?, imagePath = ?, sortOrder = ?, imageRotation = ? WHERE id = ?",
+      args: [name, title, description, imagePath, sortOrder, imageRotation, id]
     });
   } else {
     (db as Database.Database)
-      .prepare("UPDATE homies SET name = ?, title = ?, description = ?, imagePath = ?, sortOrder = ? WHERE id = ?")
-      .run(name, title, description, imagePath, sortOrder, id);
+      .prepare("UPDATE homies SET name = ?, title = ?, description = ?, imagePath = ?, sortOrder = ?, imageRotation = ? WHERE id = ?")
+      .run(name, title, description, imagePath, sortOrder, imageRotation, id);
   }
 }
 

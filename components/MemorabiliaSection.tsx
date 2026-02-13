@@ -8,7 +8,7 @@ import { ImageLightbox } from "@/components/ImageLightbox";
 type Props = { items: Memorabilia[] };
 
 export function MemorabiliaSection({ items }: Props) {
-  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string; rotation?: number } | null>(null);
 
   return (
     <section className="container mx-auto px-4 py-12 bg-secondary/30" id="memorabilia">
@@ -32,19 +32,21 @@ export function MemorabiliaSection({ items }: Props) {
             <div
               key={item.id}
               className="relative shrink-0 w-[85vw] max-w-sm aspect-[4/3] rounded-xl overflow-hidden bg-secondary snap-center snap-always md:w-80 cursor-pointer"
-              onClick={() => setLightbox({ src: item.imagePath, alt: item.title })}
+              onClick={() => setLightbox({ src: item.imagePath, alt: item.title, rotation: item.imageRotation })}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: item.imagePath, alt: item.title })}
+              onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: item.imagePath, alt: item.title, rotation: item.imageRotation })}
               aria-label="View full size"
             >
-              <Image
-                src={item.imagePath}
-                alt={item.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 85vw, 320px"
-              />
+              <div className="h-full w-full" style={{ transform: `rotate(${item.imageRotation ?? 0}deg)`, transformOrigin: "center center" }}>
+                <Image
+                  src={item.imagePath}
+                  alt={item.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 85vw, 320px"
+                />
+              </div>
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-white pointer-events-none">
                 <p className="font-semibold">{item.title}</p>
                 {item.description && (
@@ -61,6 +63,7 @@ export function MemorabiliaSection({ items }: Props) {
         alt={lightbox?.alt ?? ""}
         open={!!lightbox}
         onClose={() => setLightbox(null)}
+        rotation={lightbox?.rotation}
       />
     </section>
   );

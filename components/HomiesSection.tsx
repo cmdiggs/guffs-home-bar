@@ -10,7 +10,7 @@ export function HomiesSection() {
   const [homies, setHomies] = useState<Homie[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string; rotation?: number } | null>(null);
 
   useEffect(() => {
     Promise.all([fetch("/api/homies").then((r) => r.json()), fetch("/api/submissions/approved").then((r) => r.json())])
@@ -45,19 +45,21 @@ export function HomiesSection() {
               <div
                 key={s.id}
                 className="relative shrink-0 w-[85vw] max-w-sm aspect-[4/3] rounded-xl overflow-hidden bg-secondary snap-center snap-always md:w-80 cursor-pointer"
-                onClick={() => setLightbox({ src: s.imagePath, alt: s.guestName ? `Photo by ${s.guestName}` : "Visitor photo" })}
+                onClick={() => setLightbox({ src: s.imagePath, alt: s.guestName ? `Photo by ${s.guestName}` : "Visitor photo", rotation: (s as { imageRotation?: number }).imageRotation })}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: s.imagePath, alt: s.guestName ? `Photo by ${s.guestName}` : "Visitor photo" })}
+                onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: s.imagePath, alt: s.guestName ? `Photo by ${s.guestName}` : "Visitor photo", rotation: (s as { imageRotation?: number }).imageRotation })}
                 aria-label="View full size"
               >
-                <Image
-                  src={s.imagePath}
-                  alt={s.guestName ? `Photo by ${s.guestName}` : "Visitor photo"}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 85vw, 320px"
-                />
+                <div className="h-full w-full" style={{ transform: `rotate(${(s as { imageRotation?: number }).imageRotation ?? 0}deg)`, transformOrigin: "center center" }}>
+                  <Image
+                    src={s.imagePath}
+                    alt={s.guestName ? `Photo by ${s.guestName}` : "Visitor photo"}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 85vw, 320px"
+                  />
+                </div>
                 {(s.guestName || s.comment) && (
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-white text-sm pointer-events-none">
                     {s.guestName && <span className="font-medium">{s.guestName}</span>}
@@ -80,19 +82,21 @@ export function HomiesSection() {
                 {h.imagePath ? (
                   <div
                     className="relative h-48 md:h-auto md:w-1/3 bg-secondary shrink-0 cursor-pointer"
-                    onClick={() => setLightbox({ src: h.imagePath!, alt: h.name })}
+                    onClick={() => setLightbox({ src: h.imagePath!, alt: h.name, rotation: (h as { imageRotation?: number }).imageRotation })}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: h.imagePath!, alt: h.name })}
+                    onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: h.imagePath!, alt: h.name, rotation: (h as { imageRotation?: number }).imageRotation })}
                     aria-label="View full size"
                   >
-                    <Image
-                      src={h.imagePath}
-                      alt={h.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 240px"
-                    />
+                    <div className="h-full w-full" style={{ transform: `rotate(${(h as { imageRotation?: number }).imageRotation ?? 0}deg)`, transformOrigin: "center center" }}>
+                      <Image
+                        src={h.imagePath}
+                        alt={h.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 240px"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-l-lg bg-secondary font-sans text-3xl text-muted-foreground">
@@ -118,6 +122,7 @@ export function HomiesSection() {
         alt={lightbox?.alt ?? ""}
         open={!!lightbox}
         onClose={() => setLightbox(null)}
+        rotation={lightbox?.rotation}
       />
     </section>
   );
