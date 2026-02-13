@@ -275,6 +275,21 @@ export async function deleteCocktail(id: number): Promise<void> {
   }
 }
 
+export async function updateCocktailsOrder(ids: number[]): Promise<void> {
+  const db = getDb();
+  if (isProduction) {
+    const client = db as TursoClient;
+    for (let i = 0; i < ids.length; i++) {
+      await client.execute({ sql: "UPDATE cocktails SET sortOrder = ? WHERE id = ?", args: [i, ids[i]] });
+    }
+  } else {
+    const stmt = (db as Database.Database).prepare("UPDATE cocktails SET sortOrder = ? WHERE id = ?");
+    for (let i = 0; i < ids.length; i++) {
+      stmt.run(i, ids[i]);
+    }
+  }
+}
+
 export async function getMemorabilia(): Promise<Memorabilia[]> {
   const db = getDb();
   if (isProduction) {
@@ -337,6 +352,21 @@ export async function deleteMemorabilia(id: number): Promise<void> {
     await (db as TursoClient).execute({ sql: "DELETE FROM memorabilia WHERE id = ?", args: [id] });
   } else {
     (db as Database.Database).prepare("DELETE FROM memorabilia WHERE id = ?").run(id);
+  }
+}
+
+export async function updateMemorabiliaOrder(ids: number[]): Promise<void> {
+  const db = getDb();
+  if (isProduction) {
+    const client = db as TursoClient;
+    for (let i = 0; i < ids.length; i++) {
+      await client.execute({ sql: "UPDATE memorabilia SET sortOrder = ? WHERE id = ?", args: [i, ids[i]] });
+    }
+  } else {
+    const stmt = (db as Database.Database).prepare("UPDATE memorabilia SET sortOrder = ? WHERE id = ?");
+    for (let i = 0; i < ids.length; i++) {
+      stmt.run(i, ids[i]);
+    }
   }
 }
 
@@ -516,5 +546,20 @@ export async function deleteHomie(id: number): Promise<void> {
     await (db as TursoClient).execute({ sql: "DELETE FROM homies WHERE id = ?", args: [id] });
   } else {
     (db as Database.Database).prepare("DELETE FROM homies WHERE id = ?").run(id);
+  }
+}
+
+export async function updateHomiesOrder(ids: number[]): Promise<void> {
+  const db = getDb();
+  if (isProduction) {
+    const client = db as TursoClient;
+    for (let i = 0; i < ids.length; i++) {
+      await client.execute({ sql: "UPDATE homies SET sortOrder = ? WHERE id = ?", args: [i, ids[i]] });
+    }
+  } else {
+    const stmt = (db as Database.Database).prepare("UPDATE homies SET sortOrder = ? WHERE id = ?");
+    for (let i = 0; i < ids.length; i++) {
+      stmt.run(i, ids[i]);
+    }
   }
 }
