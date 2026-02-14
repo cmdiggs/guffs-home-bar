@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { Homie, Submission } from "@/lib/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageLightbox } from "@/components/ImageLightbox";
 
 export function HomiesSection() {
@@ -34,88 +33,78 @@ export function HomiesSection() {
         The Homies
       </h2>
 
-      {/* Approved visitor photos – slider on mobile, horizontal scroll with snap */}
-      {submissions.length > 0 && (
-        <div className="mb-10">
+      {/* Single slider: backend homies first, then approved visitor photos — same style as Memorabilia */}
+      <div
+        className="visitor-photos-slider flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-4 px-4 md:mx-0 md:px-0 touch-pan-x"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {homies.map((h) => (
           <div
-            className="visitor-photos-slider flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-4 px-4 md:mx-0 md:px-0 touch-pan-x"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            key={`homie-${h.id}`}
+            className="relative shrink-0 w-[85vw] max-w-sm aspect-[4/3] rounded-xl overflow-hidden bg-secondary snap-center snap-always md:w-80 cursor-pointer"
+            onClick={() => setLightbox({ src: h.imagePath ?? "", alt: h.name, rotation: (h as { imageRotation?: number }).imageRotation })}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: h.imagePath ?? "", alt: h.name, rotation: (h as { imageRotation?: number }).imageRotation })}
+            aria-label="View full size"
           >
-            {submissions.map((s) => (
-              <div
-                key={s.id}
-                className="relative shrink-0 w-[85vw] max-w-sm aspect-[4/3] rounded-xl overflow-hidden bg-secondary snap-center snap-always md:w-80 cursor-pointer"
-                onClick={() => setLightbox({ src: s.imagePath, alt: s.guestName ? `Photo by ${s.guestName}` : "Visitor photo", rotation: (s as { imageRotation?: number }).imageRotation })}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: s.imagePath, alt: s.guestName ? `Photo by ${s.guestName}` : "Visitor photo", rotation: (s as { imageRotation?: number }).imageRotation })}
-                aria-label="View full size"
-              >
-                <div className="h-full w-full" style={{ transform: `rotate(${(s as { imageRotation?: number }).imageRotation ?? 0}deg)`, transformOrigin: "center center" }}>
+            {h.imagePath ? (
+              <>
+                <div className="h-full w-full" style={{ transform: `rotate(${(h as { imageRotation?: number }).imageRotation ?? 0}deg)`, transformOrigin: "center center" }}>
                   <Image
-                    src={s.imagePath}
-                    alt={s.guestName ? `Photo by ${s.guestName}` : "Visitor photo"}
+                    src={h.imagePath}
+                    alt={h.name}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 85vw, 320px"
                   />
                 </div>
-                {(s.guestName || s.comment) && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-white text-sm pointer-events-none">
-                    {s.guestName && <span className="font-medium">{s.guestName}</span>}
-                    {s.guestName && s.comment && " · "}
-                    {s.comment && <span className="line-clamp-2">{s.comment}</span>}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Homie cards */}
-      {homies.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {homies.map((h) => (
-            <Card key={h.id} className="overflow-hidden border-border/50 hover:shadow-lg transition-shadow">
-              <div className="md:flex">
-                {h.imagePath ? (
-                  <div
-                    className="relative h-48 md:h-auto md:w-1/3 bg-secondary shrink-0 cursor-pointer"
-                    onClick={() => setLightbox({ src: h.imagePath!, alt: h.name, rotation: (h as { imageRotation?: number }).imageRotation })}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: h.imagePath!, alt: h.name, rotation: (h as { imageRotation?: number }).imageRotation })}
-                    aria-label="View full size"
-                  >
-                    <div className="h-full w-full" style={{ transform: `rotate(${(h as { imageRotation?: number }).imageRotation ?? 0}deg)`, transformOrigin: "center center" }}>
-                      <Image
-                        src={h.imagePath}
-                        alt={h.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 240px"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-l-lg bg-secondary font-sans text-3xl text-muted-foreground">
-                    {h.name.charAt(0)}
-                  </div>
-                )}
-                <div className={h.imagePath ? "md:w-2/3" : "w-full"}>
-                  <CardHeader>
-                    <CardTitle className="font-sans text-xl">{h.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-muted-foreground">{h.description}</p>
-                  </CardContent>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-white pointer-events-none">
+                  <p className="font-semibold">{h.name}</p>
+                  {h.title && <p className="text-sm opacity-90">{h.title}</p>}
+                  {h.description && (
+                    <p className="text-sm mt-0.5 line-clamp-2 opacity-90">{h.description}</p>
+                  )}
                 </div>
+              </>
+            ) : (
+              <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground p-4">
+                <span className="text-4xl font-semibold">{h.name.charAt(0)}</span>
+                <p className="font-semibold mt-2">{h.name}</p>
+                {h.description && <p className="text-sm line-clamp-2 mt-0.5">{h.description}</p>}
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
+            )}
+          </div>
+        ))}
+        {submissions.map((s) => (
+          <div
+            key={`sub-${s.id}`}
+            className="relative shrink-0 w-[85vw] max-w-sm aspect-[4/3] rounded-xl overflow-hidden bg-secondary snap-center snap-always md:w-80 cursor-pointer"
+            onClick={() => setLightbox({ src: s.imagePath, alt: s.guestName ? `Photo by ${s.guestName}` : "Visitor photo", rotation: (s as { imageRotation?: number }).imageRotation })}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && setLightbox({ src: s.imagePath, alt: s.guestName ? `Photo by ${s.guestName}` : "Visitor photo", rotation: (s as { imageRotation?: number }).imageRotation })}
+            aria-label="View full size"
+          >
+            <div className="h-full w-full" style={{ transform: `rotate(${(s as { imageRotation?: number }).imageRotation ?? 0}deg)`, transformOrigin: "center center" }}>
+              <Image
+                src={s.imagePath}
+                alt={s.guestName ? `Photo by ${s.guestName}` : "Visitor photo"}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 85vw, 320px"
+              />
+            </div>
+            {(s.guestName || s.comment) && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-white text-sm pointer-events-none">
+                {s.guestName && <span className="font-medium">{s.guestName}</span>}
+                {s.guestName && s.comment && " · "}
+                {s.comment && <span className="line-clamp-2">{s.comment}</span>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
       <ImageLightbox
         src={lightbox?.src ?? ""}
