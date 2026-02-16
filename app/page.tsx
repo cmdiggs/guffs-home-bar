@@ -21,7 +21,7 @@ export default function HomePage() {
           background: "radial-gradient(ellipse 80% 70% at 50% 50%, #35384a, #292b3c 50%, #1e2030)",
         }}
       >
-        <div className="container relative z-10 mx-auto px-4 flex justify-center">
+        <div className="container relative z-10 mx-auto px-4 flex justify-center -mt-24 sm:-mt-12 md:mt-0">
           <Image
             src="/guffs-logo.svg"
             alt="Guffs"
