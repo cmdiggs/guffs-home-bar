@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { getHomieById, updateHomie, deleteHomie } from "@/lib/db";
-import { saveHomieImage, validateImageFile } from "@/lib/storage";
+import { saveHomieImage, validateImageFile, deleteImage } from "@/lib/storage";
 
 export async function PATCH(
   _request: NextRequest,
@@ -25,10 +25,11 @@ export async function PATCH(
       }
       const buffer = Buffer.from(await file.arrayBuffer());
       imagePath = await saveHomieImage(buffer, file.name);
+      await deleteImage(existing.imagePath);
     }
     await updateHomie(id, {
       name: name ?? existing.name,
-      title: "",
+      title: existing.title,
       description: description ?? existing.description,
       imagePath,
     });
@@ -46,7 +47,9 @@ export async function DELETE(
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  if (!(await getHomieById(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const homie = await getHomieById(id);
+  if (!homie) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await deleteImage(homie.imagePath);
   await deleteHomie(id);
   return NextResponse.json({ ok: true });
 }

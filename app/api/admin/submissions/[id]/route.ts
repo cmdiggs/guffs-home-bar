@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { ensureTursoImageRotationColumns, getSubmissions, updateSubmissionStatus, updateSubmissionImageRotation, deleteSubmission } from "@/lib/db";
+import { deleteImage } from "@/lib/storage";
 
 export async function DELETE(
   _request: NextRequest,
@@ -13,6 +14,7 @@ export async function DELETE(
   const submission = submissions.find((s) => s.id === id);
   if (!submission) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
+    await deleteImage(submission.imagePath);
     await deleteSubmission(id);
     return NextResponse.json({ ok: true });
   } catch (e) {

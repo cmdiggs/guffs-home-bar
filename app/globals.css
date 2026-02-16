@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -41,15 +39,10 @@
   font-family: "Druk X Cond Super", sans-serif !important;
 }
 
-/* Scale GUFFS so the word spans ~100% of viewport width (condensed font ≈ 4× font-size) */
-.guffs-title-size {
-  font-size: clamp(4rem, 24vw, 28rem);
-}
-
-/* Story section: force Nanum Myeongjo (quoted name required in CSS) */
+/* Story section: Nanum Myeongjo via next/font/google CSS variable */
 .font-story,
 .story-section-font {
-  font-family: "Nanum Myeongjo", Georgia, serif !important;
+  font-family: var(--font-nanum), Georgia, serif !important;
 }
 
 @layer utilities {
@@ -61,38 +54,6 @@
 /* Hide scrollbar on visitor photos slider (webkit) */
 .visitor-photos-slider::-webkit-scrollbar {
   display: none;
-}
-
-@keyframes logoFadeIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.85) translateY(20px);
-    filter: blur(4px);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05) translateY(-5px);
-    filter: blur(0px);
-  }
-  70% {
-    transform: scale(0.98) translateY(2px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0px);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @layer base {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Cocktail = {
   id: number;
@@ -12,6 +13,7 @@ type Cocktail = {
 };
 
 export function CocktailForm({ cocktail, onDone }: { cocktail?: Cocktail; onDone?: () => void }) {
+  const router = useRouter();
   const [name, setName] = useState(cocktail?.name ?? "");
   const [description, setDescription] = useState(cocktail?.description ?? "");
   const [friendName, setFriendName] = useState(cocktail?.friendName ?? "");
@@ -44,7 +46,7 @@ export function CocktailForm({ cocktail, onDone }: { cocktail?: Cocktail; onDone
       setFriendName("");
       setIngredients("");
       onDone?.();
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Something went wrong.");
     } finally {

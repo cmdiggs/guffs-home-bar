@@ -13,12 +13,12 @@ export async function isAdmin(): Promise<boolean> {
   const cookieStore = await cookies();
   const token = cookieStore.get(ADMIN_COOKIE)?.value;
   if (!token) return false;
-  return token === (await getAdminPassword());
+  return token === getAdminPassword();
 }
 
 export async function setAdminSession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(ADMIN_COOKIE, await getAdminPassword(), {
+  cookieStore.set(ADMIN_COOKIE, getAdminPassword(), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Homie = { id: number; name: string; title: string; description: string; imagePath: string | null };
 
-function isHeic(file: File): boolean {
-  const t = file.type?.toLowerCase() ?? "";
-  const n = file.name?.toLowerCase() ?? "";
-  return t === "image/heic" || t === "image/heif" || n.endsWith(".heic") || n.endsWith(".heif");
-}
-
 export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => void }) {
+  const router = useRouter();
   const [name, setName] = useState(homie?.name ?? "");
   const [description, setDescription] = useState(homie?.description ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -41,7 +37,7 @@ export function HomieForm({ homie, onDone }: { homie?: Homie; onDone?: () => voi
       setDescription("");
       setFile(null);
       onDone?.();
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Something went wrong.");
     } finally {

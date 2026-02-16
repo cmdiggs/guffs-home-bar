@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import sharp from "sharp";
-import { put } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
 import decode from "heic-decode";
 
 const UPLOADS_DIR = process.env.UPLOADS_PATH ?? path.join(process.cwd(), "public", "uploads");
@@ -27,7 +27,7 @@ function ensureDirs() {
   }
 }
 
-function safeFilename(original: string): string {
+function safeFilename(): string {
   const base = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 9);
   return base + ".jpg"; // Always save as JPEG after compression
 }
@@ -155,8 +155,9 @@ async function compressImage(buffer: Buffer): Promise<Buffer> {
     }
   }
 
-  // Now compress with sharp
+  // Auto-rotate based on EXIF orientation, then compress
   return sharp(inputBuffer)
+    .rotate() // auto-orient from EXIF data
     .resize(MAX_WIDTH, MAX_WIDTH, {
       fit: "inside",
       withoutEnlargement: true,
@@ -170,7 +171,7 @@ async function compressImage(buffer: Buffer): Promise<Buffer> {
  */
 async function saveFile(buffer: Buffer, originalName: string, folder: string): Promise<string> {
   const compressedBuffer = await compressImage(buffer);
-  const filename = safeFilename(originalName);
+  const filename = safeFilename();
 
   if (isProduction) {
     // Production: Upload to Vercel Blob
@@ -212,4 +213,28 @@ export async function saveHomieImage(file: Buffer, originalName: string): Promis
 
 export async function saveWhatsNewImage(file: Buffer, originalName: string): Promise<string> {
   return saveFile(file, originalName, "whats-new");
+}
+
+/**
+ * Delete an image from Vercel Blob (production) or local filesystem (development).
+ * Silently ignores errors so a failed cleanup doesn't break the delete flow.
+ */
+export async function deleteImage(imagePath: string | null): Promise<void> {
+  if (!imagePath) return;
+  try {
+    if (isProduction) {
+      // Vercel Blob URLs start with https://
+      if (imagePath.startsWith("http")) {
+        await del(imagePath);
+      }
+    } else {
+      // Local paths like /uploads/cocktails/abc123.jpg
+      const filePath = path.join(process.cwd(), "public", imagePath);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+  } catch (error) {
+    console.error("Image cleanup failed:", error);
+  }
 }

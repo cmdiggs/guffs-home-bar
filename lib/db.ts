@@ -15,7 +15,7 @@ let sqliteDb: Database.Database | null = null;
 let tursoDb: TursoClient | null = null;
 
 async function ensureImageRotationColumnsTurso(client: TursoClient) {
-  const tables = ["cocktails", "memorabilia", "homies", "submissions"];
+  const tables = ["cocktails", "memorabilia", "homies", "submissions", "whats_new"];
   for (const table of tables) {
     try {
       await client.execute(
@@ -106,16 +106,36 @@ function runMigrationsSqlite(database: Database.Database) {
       createdAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS whats_new (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      imagePath TEXT NOT NULL,
-      description TEXT NOT NULL,
-      updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
+  // Migrate whats_new from single-item (CHECK id=1) to multi-item with sortOrder
+  const wnCols = database.prepare("PRAGMA table_info(whats_new)").all() as { name: string }[];
+  if (wnCols.length === 0) {
+    // Table doesn't exist yet — create fresh with new schema
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS whats_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        imagePath TEXT NOT NULL,
+        description TEXT NOT NULL,
+        sortOrder INTEGER NOT NULL DEFAULT 0,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+  } else if (!wnCols.some((c) => c.name === "sortOrder")) {
+    // Old schema exists — migrate data to new schema
+    database.exec(`
+      CREATE TABLE whats_new_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        imagePath TEXT NOT NULL,
+        description TEXT NOT NULL,
+        sortOrder INTEGER NOT NULL DEFAULT 0,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO whats_new_v2 (imagePath, description, sortOrder) SELECT imagePath, description, 0 FROM whats_new;
+      DROP TABLE whats_new;
+      ALTER TABLE whats_new_v2 RENAME TO whats_new;
+    `);
+  }
   // Optional imageRotation (0, 90, 180, 270) for fixing orientation
-  for (const table of ["cocktails", "memorabilia", "homies", "submissions"]) {
+  for (const table of ["cocktails", "memorabilia", "homies", "submissions", "whats_new"]) {
     const cols = database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
     if (!cols.some((c) => c.name === "imageRotation")) {
       database.exec(`ALTER TABLE ${table} ADD COLUMN imageRotation INTEGER NOT NULL DEFAULT 0`);
@@ -162,12 +182,26 @@ async function runMigrationsTurso(database: TursoClient) {
       createdAt TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
     `CREATE TABLE IF NOT EXISTS whats_new (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       imagePath TEXT NOT NULL,
       description TEXT NOT NULL,
-      updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+      sortOrder INTEGER NOT NULL DEFAULT 0,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
   ], "write");
+  // Migrate old whats_new schema if needed (CHECK id=1 → multi-item)
+  try {
+    const info = await database.execute("PRAGMA table_info(whats_new)");
+    const cols = info.rows.map((r) => r.name as string);
+    if (cols.length > 0 && !cols.includes("sortOrder")) {
+      await database.execute("CREATE TABLE whats_new_v2 (id INTEGER PRIMARY KEY AUTOINCREMENT, imagePath TEXT NOT NULL, description TEXT NOT NULL, sortOrder INTEGER NOT NULL DEFAULT 0, createdAt TEXT NOT NULL DEFAULT (datetime('now')))");
+      await database.execute("INSERT INTO whats_new_v2 (imagePath, description, sortOrder) SELECT imagePath, description, 0 FROM whats_new");
+      await database.execute("DROP TABLE whats_new");
+      await database.execute("ALTER TABLE whats_new_v2 RENAME TO whats_new");
+    }
+  } catch (_) {
+    // Migration already done or table is fresh
+  }
 }
 
 export type Cocktail = {
@@ -218,7 +252,9 @@ export type WhatsNew = {
   id: number;
   imagePath: string;
   description: string;
-  updatedAt: string;
+  sortOrder: number;
+  createdAt: string;
+  imageRotation?: number;
 };
 
 export async function getCocktails(): Promise<Cocktail[]> {
@@ -470,49 +506,105 @@ export async function getApprovedSubmissions(): Promise<Submission[]> {
     .all() as Submission[];
 }
 
-export async function getWhatsNew(): Promise<WhatsNew | null> {
-  const db = getDb();
-  if (isProduction) {
-    const client = db as TursoClient;
-    await client.execute({
-      sql: "CREATE TABLE IF NOT EXISTS whats_new (id INTEGER PRIMARY KEY CHECK (id = 1), imagePath TEXT NOT NULL, description TEXT NOT NULL, updatedAt TEXT NOT NULL DEFAULT (datetime('now')))",
-      args: [],
-    });
-    const result = await client.execute({ sql: "SELECT * FROM whats_new WHERE id = 1", args: [] });
-    return (result.rows[0] as unknown as WhatsNew) ?? null;
+async function ensureWhatsNewTableTurso(client: TursoClient): Promise<void> {
+  // Create the multi-item table if it doesn't exist
+  await client.execute("CREATE TABLE IF NOT EXISTS whats_new (id INTEGER PRIMARY KEY AUTOINCREMENT, imagePath TEXT NOT NULL, description TEXT NOT NULL, sortOrder INTEGER NOT NULL DEFAULT 0, createdAt TEXT NOT NULL DEFAULT (datetime('now')))");
+  // Migrate from old single-item schema if needed
+  try {
+    const info = await client.execute("PRAGMA table_info(whats_new)");
+    const cols = info.rows.map((r) => r.name as string);
+    if (cols.length > 0 && !cols.includes("sortOrder")) {
+      await client.execute("CREATE TABLE whats_new_v2 (id INTEGER PRIMARY KEY AUTOINCREMENT, imagePath TEXT NOT NULL, description TEXT NOT NULL, sortOrder INTEGER NOT NULL DEFAULT 0, createdAt TEXT NOT NULL DEFAULT (datetime('now')))");
+      await client.execute("INSERT INTO whats_new_v2 (imagePath, description, sortOrder) SELECT imagePath, description, 0 FROM whats_new");
+      await client.execute("DROP TABLE whats_new");
+      await client.execute("ALTER TABLE whats_new_v2 RENAME TO whats_new");
+    }
+  } catch (_) {
+    // Migration already done or fresh table
   }
-  return (db as Database.Database).prepare("SELECT * FROM whats_new WHERE id = 1").get() as WhatsNew | null;
 }
 
-export async function upsertWhatsNew(imagePath: string, description: string): Promise<WhatsNew> {
+export async function getWhatsNewItems(): Promise<WhatsNew[]> {
   const db = getDb();
-  const updatedAt = new Date().toISOString();
   if (isProduction) {
     const client = db as TursoClient;
-    await client.execute({
-      sql: "CREATE TABLE IF NOT EXISTS whats_new (id INTEGER PRIMARY KEY CHECK (id = 1), imagePath TEXT NOT NULL, description TEXT NOT NULL, updatedAt TEXT NOT NULL DEFAULT (datetime('now')))",
-      args: [],
+    await ensureWhatsNewTableTurso(client);
+    const result = await client.execute("SELECT * FROM whats_new ORDER BY sortOrder ASC, id ASC");
+    return result.rows as unknown as WhatsNew[];
+  }
+  return (db as Database.Database).prepare("SELECT * FROM whats_new ORDER BY sortOrder ASC, id ASC").all() as WhatsNew[];
+}
+
+export async function getWhatsNewById(id: number): Promise<WhatsNew | undefined> {
+  const db = getDb();
+  if (isProduction) {
+    const result = await (db as TursoClient).execute({ sql: "SELECT * FROM whats_new WHERE id = ?", args: [id] });
+    return result.rows[0] as unknown as WhatsNew | undefined;
+  }
+  return (db as Database.Database).prepare("SELECT * FROM whats_new WHERE id = ?").get(id) as WhatsNew | undefined;
+}
+
+export async function createWhatsNew(description: string, imagePath: string, sortOrder: number = 0): Promise<WhatsNew> {
+  const db = getDb();
+  if (isProduction) {
+    const result = await (db as TursoClient).execute({
+      sql: "INSERT INTO whats_new (description, imagePath, sortOrder) VALUES (?, ?, ?) RETURNING *",
+      args: [description, imagePath, sortOrder],
     });
-    await client.execute({
-      sql: "INSERT INTO whats_new (id, imagePath, description, updatedAt) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET imagePath = excluded.imagePath, description = excluded.description, updatedAt = excluded.updatedAt",
-      args: [imagePath, description, updatedAt],
-    });
-    const result = await client.execute({ sql: "SELECT * FROM whats_new WHERE id = 1", args: [] });
     return result.rows[0] as unknown as WhatsNew;
   }
-    (db as Database.Database)
-    .prepare("INSERT INTO whats_new (id, imagePath, description, updatedAt) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET imagePath = excluded.imagePath, description = excluded.description, updatedAt = excluded.updatedAt")
-    .run(imagePath, description, updatedAt);
-  return (await getWhatsNew())!;
+  const stmt = (db as Database.Database).prepare(
+    "INSERT INTO whats_new (description, imagePath, sortOrder) VALUES (?, ?, ?)"
+  );
+  const result = stmt.run(description, imagePath, sortOrder);
+  return (await getWhatsNewById(result.lastInsertRowid as number))!;
 }
 
-export async function deleteWhatsNew(): Promise<void> {
+export async function updateWhatsNew(
+  id: number,
+  data: { description?: string; imagePath?: string; sortOrder?: number; imageRotation?: number }
+): Promise<void> {
+  const row = await getWhatsNewById(id);
+  if (!row) return;
+  const description = data.description ?? row.description;
+  const imagePath = data.imagePath ?? row.imagePath;
+  const sortOrder = data.sortOrder ?? row.sortOrder;
+  const imageRotation = data.imageRotation ?? (row as WhatsNew).imageRotation ?? 0;
+
+  const db = getDb();
+  if (isProduction) {
+    await (db as TursoClient).execute({
+      sql: "UPDATE whats_new SET description = ?, imagePath = ?, sortOrder = ?, imageRotation = ? WHERE id = ?",
+      args: [description, imagePath, sortOrder, imageRotation, id],
+    });
+  } else {
+    (db as Database.Database)
+      .prepare("UPDATE whats_new SET description = ?, imagePath = ?, sortOrder = ?, imageRotation = ? WHERE id = ?")
+      .run(description, imagePath, sortOrder, imageRotation, id);
+  }
+}
+
+export async function deleteWhatsNewItem(id: number): Promise<void> {
+  const db = getDb();
+  if (isProduction) {
+    await (db as TursoClient).execute({ sql: "DELETE FROM whats_new WHERE id = ?", args: [id] });
+  } else {
+    (db as Database.Database).prepare("DELETE FROM whats_new WHERE id = ?").run(id);
+  }
+}
+
+export async function updateWhatsNewOrder(ids: number[]): Promise<void> {
   const db = getDb();
   if (isProduction) {
     const client = db as TursoClient;
-    await client.execute({ sql: "DELETE FROM whats_new WHERE id = 1", args: [] });
+    for (let i = 0; i < ids.length; i++) {
+      await client.execute({ sql: "UPDATE whats_new SET sortOrder = ? WHERE id = ?", args: [i, ids[i]] });
+    }
   } else {
-    (db as Database.Database).prepare("DELETE FROM whats_new WHERE id = 1").run();
+    const stmt = (db as Database.Database).prepare("UPDATE whats_new SET sortOrder = ? WHERE id = ?");
+    for (let i = 0; i < ids.length; i++) {
+      stmt.run(i, ids[i]);
+    }
   }
 }
 

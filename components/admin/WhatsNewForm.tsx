@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { WhatsNew } from "@/lib/db";
 
-export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
-  const [description, setDescription] = useState(initial?.description ?? "");
+export function WhatsNewForm({ item, onDone }: { item?: WhatsNew; onDone?: () => void }) {
+  const router = useRouter();
+  const [description, setDescription] = useState(item?.description ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [trashing, setTrashing] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -20,14 +21,19 @@ export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
       formData.append("description", description.trim());
       if (file) formData.append("file", file);
 
-      const res = await fetch("/api/admin/whats-new", { method: "PATCH", body: formData });
+      const url = item ? `/api/admin/whats-new/${item.id}` : "/api/admin/whats-new";
+      const method = item ? "PATCH" : "POST";
+
+      const res = await fetch(url, { method, body: formData });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? "Failed.");
         return;
       }
+      setDescription("");
       setFile(null);
-      window.location.reload();
+      onDone?.();
+      router.refresh();
     } catch {
       setError("Something went wrong.");
     } finally {
@@ -35,29 +41,9 @@ export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
     }
   }
 
-  async function handleTrash() {
-    if (!confirm("Remove the What's New section from the homepage? You can add it again anytime.")) return;
-    setError("");
-    setTrashing(true);
-    try {
-      const res = await fetch("/api/admin/whats-new", { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Failed to delete.");
-        return;
-      }
-      window.location.reload();
-    } catch {
-      setError("Something went wrong.");
-    } finally {
-      setTrashing(false);
-    }
-  }
-
   return (
     <form onSubmit={handleSubmit} className="mt-6 rounded-xl border border-black/10 bg-white p-4 shadow-sm">
-      <h2 className="font-display text-lg text-ink">What&apos;s New at Guffs</h2>
-      <p className="mt-1 font-sans text-sm text-ink/70">Update the featured bottle and description shown on the homepage.</p>
+      <h2 className="font-display text-lg text-ink">{item ? "Edit item" : "Add What\u2019s New"}</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
           <label className="block font-sans text-sm font-medium text-ink mb-1">Bottle image</label>
@@ -67,8 +53,7 @@ export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="w-full font-sans text-sm text-ink"
           />
-          {initial && <p className="mt-1 font-sans text-xs text-ink/60">Leave empty to keep current image.</p>}
-          {!initial && <p className="mt-1 font-sans text-xs text-ink/60">Required for first setup.</p>}
+          {item && <p className="mt-1 font-sans text-xs text-ink/60">Leave empty to keep current image.</p>}
         </div>
         <div>
           <label className="block font-sans text-sm font-medium text-ink mb-1">Description</label>
@@ -76,33 +61,24 @@ export function WhatsNewForm({ initial }: { initial: WhatsNew | null }) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
-            rows={4}
+            rows={3}
             className="w-full rounded border border-black/15 px-3 py-2 font-sans text-ink"
             placeholder="Describe the new bottle..."
           />
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-3 flex gap-2">
         <button
           type="submit"
           disabled={loading}
           className="rounded bg-ink px-4 py-2 font-sans text-sm font-medium text-cream hover:bg-ink/90 disabled:opacity-60"
         >
-          {loading ? "Saving…" : "Update"}
+          {loading ? "Saving\u2026" : item ? "Update" : "Add"}
         </button>
-        {initial && (
-          <>
-            <span className="text-ink/30">|</span>
-            <button
-              type="button"
-              onClick={handleTrash}
-              disabled={trashing}
-              className="font-sans text-sm text-ink/60 hover:text-red-600 hover:underline disabled:opacity-60"
-              title="Remove What's New from homepage"
-            >
-              {trashing ? "Removing…" : "Trash"}
-            </button>
-          </>
+        {item && onDone && (
+          <button type="button" onClick={onDone} className="rounded border border-black/20 px-4 py-2 font-sans text-sm text-ink">
+            Cancel
+          </button>
         )}
       </div>
       {error && <p className="mt-2 font-sans text-sm text-red-600">{error}</p>}

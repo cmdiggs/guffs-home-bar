@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { getMemorabiliaById, updateMemorabilia, deleteMemorabilia } from "@/lib/db";
-import { saveMemorabiliaImage, validateMemorabiliaImageFile } from "@/lib/storage";
+import { saveMemorabiliaImage, validateMemorabiliaImageFile, deleteImage } from "@/lib/storage";
 
 export async function PATCH(
   _request: NextRequest,
@@ -29,6 +29,7 @@ export async function PATCH(
       }
       const buffer = Buffer.from(await file.arrayBuffer());
       imagePath = await saveMemorabiliaImage(buffer, file.name);
+      await deleteImage(existing.imagePath);
     }
     await updateMemorabilia(id, {
       title: title ?? existing.title,
@@ -49,7 +50,9 @@ export async function DELETE(
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  if (!(await getMemorabiliaById(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const item = await getMemorabiliaById(id);
+  if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await deleteImage(item.imagePath);
   await deleteMemorabilia(id);
   return NextResponse.json({ ok: true });
 }

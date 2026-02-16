@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Cocktail } from "@/lib/db";
-import { CocktailForm } from "./CocktailForm";
+import type { WhatsNew } from "@/lib/db";
+import { WhatsNewForm } from "./WhatsNewForm";
 import { AdminImageWithRotation } from "./AdminImageWithRotation";
 
 const GripIcon = () => (
@@ -16,27 +16,27 @@ const GripIcon = () => (
   </svg>
 );
 
-export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail[] }) {
-  const [cocktails, setCocktails] = useState(initialCocktails);
-  const [editing, setEditing] = useState<Cocktail | null>(null);
+export function WhatsNewList({ initialItems }: { initialItems: WhatsNew[] }) {
+  const [items, setItems] = useState(initialItems);
+  const [editing, setEditing] = useState<WhatsNew | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this cocktail?")) return;
-    const res = await fetch(`/api/admin/cocktails/${id}`, { method: "DELETE" });
-    if (res.ok) setCocktails((prev) => prev.filter((c) => c.id !== id));
+    if (!confirm("Delete this item?")) return;
+    const res = await fetch(`/api/admin/whats-new/${id}`, { method: "DELETE" });
+    if (res.ok) setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
   async function handleRotate(id: number, currentRotation: number) {
     const next = (currentRotation + 90) % 360;
-    const res = await fetch(`/api/admin/cocktails/${id}/rotate`, {
+    const res = await fetch(`/api/admin/whats-new/${id}/rotate`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageRotation: next }),
     });
     if (res.ok) {
       const updated = await res.json();
-      setCocktails((prev) => prev.map((c) => (c.id === id ? { ...c, imageRotation: updated.imageRotation ?? next } : c)));
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, imageRotation: updated.imageRotation ?? next } : i)));
     } else {
       const err = await res.json().catch(() => ({}));
       alert(err?.error ?? `Rotate failed (${res.status})`);
@@ -45,17 +45,17 @@ export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail
 
   async function handleReorder(fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex) return;
-    const newOrder = [...cocktails];
+    const newOrder = [...items];
     const [removed] = newOrder.splice(fromIndex, 1);
     newOrder.splice(toIndex, 0, removed);
-    const ids = newOrder.map((c) => c.id);
-    const res = await fetch("/api/admin/cocktails/reorder", {
+    const ids = newOrder.map((i) => i.id);
+    const res = await fetch("/api/admin/whats-new/reorder", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
     });
     if (res.ok) {
-      setCocktails(newOrder);
+      setItems(newOrder);
     } else {
       const err = await res.json().catch(() => ({}));
       alert(err?.error ?? `Reorder failed (${res.status})`);
@@ -87,15 +87,15 @@ export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail
 
   return (
     <div className="mt-8">
-      <h2 className="font-display text-lg text-ink">All cocktails</h2>
+      <h2 className="font-display text-lg text-ink">All items</h2>
       {editing ? (
-        <CocktailForm cocktail={editing} onDone={() => setEditing(null)} />
+        <WhatsNewForm item={editing} onDone={() => setEditing(null)} />
       ) : null}
       <p className="mt-1 font-sans text-sm text-ink/60">Drag rows to reorder.</p>
       <ul className="mt-4 space-y-4">
-        {cocktails.map((c, index) => (
+        {items.map((i, index) => (
           <li
-            key={c.id}
+            key={i.id}
             draggable
             onDragStart={(e) => onDragStart(e, index)}
             onDragOver={onDragOver}
@@ -108,20 +108,19 @@ export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail
             </div>
             <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded bg-black/5">
               <AdminImageWithRotation
-                src={c.imagePath}
-                alt={c.name}
-                rotation={(c as Cocktail).imageRotation ?? 0}
+                src={i.imagePath}
+                alt="Bottle"
+                rotation={i.imageRotation ?? 0}
                 sizes="128px"
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-display text-lg text-ink">{c.name}</p>
-              <p className="font-sans text-sm text-ink/70 line-clamp-2">{c.description}</p>
+              <p className="font-sans text-sm text-ink/70 line-clamp-3">{i.description}</p>
             </div>
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => handleRotate(c.id, (c as Cocktail).imageRotation ?? 0)}
+                onClick={() => handleRotate(i.id, i.imageRotation ?? 0)}
                 className="rounded border border-black/20 px-3 py-1.5 font-sans text-sm text-ink hover:bg-black/5"
                 title="Rotate image 90°"
               >
@@ -129,14 +128,14 @@ export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail
               </button>
               <button
                 type="button"
-                onClick={() => setEditing(c)}
+                onClick={() => setEditing(i)}
                 className="rounded border border-black/20 px-3 py-1.5 font-sans text-sm text-ink hover:bg-black/5"
               >
                 Edit
               </button>
               <button
                 type="button"
-                onClick={() => handleDelete(c.id)}
+                onClick={() => handleDelete(i.id)}
                 className="rounded border border-red-200 px-3 py-1.5 font-sans text-sm text-red-700 hover:bg-red-50"
               >
                 Delete
@@ -145,8 +144,8 @@ export function CocktailsList({ initialCocktails }: { initialCocktails: Cocktail
           </li>
         ))}
       </ul>
-      {cocktails.length === 0 && !editing && (
-        <p className="font-sans text-ink/60">No cocktails yet. Add one above.</p>
+      {items.length === 0 && !editing && (
+        <p className="font-sans text-ink/60">No items yet. Add one above.</p>
       )}
     </div>
   );

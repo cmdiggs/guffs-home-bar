@@ -8,14 +8,10 @@ import { MemorabiliaSection } from "@/components/MemorabiliaSection";
 import { PlaylistSection } from "@/components/PlaylistSection";
 import { UploadForm } from "@/components/UploadForm";
 import { Footer } from "@/components/Footer";
-import { getWhatsNew } from "@/lib/db";
-
 // Revalidate every 60 seconds to show newly added content
 export const revalidate = 60;
 
-export default async function HomePage() {
-  const whatsNew = await getWhatsNew();
-  const whatsNewPlain = whatsNew ? (JSON.parse(JSON.stringify(whatsNew)) as typeof whatsNew) : null;
+export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
@@ -47,7 +43,7 @@ export default async function HomePage() {
 
       {/* Rest of content - single block, no cards */}
       <div className="relative z-10 bg-card">
-        <WhatsNewSection data={whatsNewPlain} />
+        <WhatsNewSection />
         <section id="cocktails" className="pt-0">
           <div className="w-full bg-[#1d2130]">
             {/* eslint-disable-next-line @next/next/no-img-element */}

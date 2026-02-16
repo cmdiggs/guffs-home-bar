@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer());
       imagePath = await saveHomieImage(buffer, file.name);
     }
-    const homie = await createHomie(name, "", description, imagePath);
+    const homie = await createHomie(name, name, description, imagePath);
     return NextResponse.json(homie);
   } catch (e) {
     console.error(e);

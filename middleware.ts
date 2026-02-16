@@ -5,9 +5,6 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_COOKIE = "guffs_admin";
 
 export function middleware(request: NextRequest) {
-  if (!request.nextUrl.pathname.startsWith("/admin")) {
-    return NextResponse.next();
-  }
   if (request.nextUrl.pathname === "/admin/login") {
     return NextResponse.next();
   }
@@ -21,3 +18,7 @@ export function middleware(request: NextRequest) {
   }
   return NextResponse.next();
 }
+
+export const config = {
+  matcher: ["/admin/:path*"],
+};

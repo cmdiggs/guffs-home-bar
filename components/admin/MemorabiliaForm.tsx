@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Memorabilia = { id: number; title: string; description: string; imagePath: string };
 
-function isHeic(file: File): boolean {
-  const t = file.type?.toLowerCase() ?? "";
-  const n = file.name?.toLowerCase() ?? "";
-  return t === "image/heic" || t === "image/heif" || n.endsWith(".heic") || n.endsWith(".heif");
-}
-
 export function MemorabiliaForm({ item, onDone }: { item?: Memorabilia; onDone?: () => void }) {
+  const router = useRouter();
   const [title, setTitle] = useState(item?.title ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -41,7 +37,7 @@ export function MemorabiliaForm({ item, onDone }: { item?: Memorabilia; onDone?:
       setDescription("");
       setFile(null);
       onDone?.();
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("Something went wrong.");
     } finally {
