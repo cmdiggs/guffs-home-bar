@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { getWhatsNewById, updateWhatsNew, deleteWhatsNewItem } from "@/lib/db";
+import { ensureTursoImageRotationColumns, getWhatsNewById, updateWhatsNew, deleteWhatsNewItem } from "@/lib/db";
 import { saveWhatsNewImage, validateWhatsNewImageFile, deleteImage } from "@/lib/storage";
 
 export async function PATCH(
@@ -8,6 +8,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await ensureTursoImageRotationColumns();
   const id = Number((await params).id);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   const existing = await getWhatsNewById(id);
